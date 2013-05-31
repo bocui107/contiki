@@ -1,7 +1,13 @@
 /*
- * Copyright (c) 2008, Swedish Institute of Computer Science.
- * All rights reserved.
+ * Remote Power Switch Example for the Seed-Eye Board
+ * Copyright (c) 2013, Giovanni Pellerano
+ * 
+ * Ownership: Scuola Superiore Sant'Anna (http://www.sssup.it) and
+ * Consorzio Nazionale Interuniversitario per le Telecomunicazioni
+ * (http://www.cnit.it).
  *
+ * All rights reserved.
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -26,22 +32,64 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
+ */
+ 
+/**
+ * \addtogroup Remote Power Switch Example for the Seed-Eye Board
  *
+ * @{
  */
 
 /**
- * \file
- *         Header file for Contik shell command sensortweet
- * \author
- *         Adam Dunkels <adam@sics.se>
+ * \file   remotepowerswitch.c
+ * \brief  Remote Power Switch Example for the Seed-Eye Board
+ * \author Giovanni Pellerano <giovanni.pellerano@evilaliv3.org>
+ * \date   2013-01-24
  */
 
-#ifndef __SHELL_SENSORTWEET_H__
-#define __SHELL_SENSORTWEET_H__
 
-#include "shell.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-void shell_sensortweet_init(void);
+#include "contiki.h"
+#include "contiki-net.h"
 
-#endif /* __SHELL_SENSORTWEET_H__ */
+#include "erbium.h"
+
+#include "dev/leds.h"
+
+#include <p32xxxx.h>
+
+RESOURCE(toggle, METHOD_GET | METHOD_PUT | METHOD_POST, "actuators/powerswitch", "title=\"Red LED\";rt=\"Control\"");
+void
+toggle_handler(void* request, void* response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  leds_toggle(LEDS_RED);
+  
+  PORTEbits.RE0 = !PORTEbits.RE0;
+}
+
+PROCESS(remote_power_switch, "Remote Power Switch");
+
+AUTOSTART_PROCESSES(&remote_power_switch);
+
+PROCESS_THREAD(remote_power_switch, ev, data)
+{
+  PROCESS_BEGIN();
+
+  rest_init_engine();
+  
+  TRISEbits.TRISE0 = 0;
+  PORTEbits.RE0 = 0;
+
+  rest_activate_resource(&resource_toggle);
+
+  while(1) {
+    PROCESS_WAIT_EVENT();
+  }
+
+  PROCESS_END();
+}
+
+/** @} */
