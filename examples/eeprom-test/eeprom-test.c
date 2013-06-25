@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Swedish Institute of Computer Science.
+ * Copyright (c) 2013, Robert Quattlebaum
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,78 +32,67 @@
 
 /**
  * \file
- *         Shell command that posts sensor data to Twitter
+ *         A very simple Contiki application showing how to read and write
+ *         data using Contiki's EEPROM API.
  * \author
- *         Adam Dunkels <adam@sics.se>
+ *         Robert Quattlebaum <darco@deepdarc.com>
  */
 
 #include "contiki.h"
-#include "contiki-net.h"
-#include "cfs/cfs.h"
-#include "dev/sht11.h"
-#include "shell.h"
-#include "twitter.h"
+#include "dev/eeprom.h"
 
-#include <stdio.h>
-#include <string.h>
-
-#define MAX_USERNAME_PASSWORD  32
+#include <stdio.h>              /* For printf() */
 
 /*---------------------------------------------------------------------------*/
-PROCESS(sensortweet_process, "sensortweet");
-SHELL_COMMAND(sensortweet_command,
-	      "sensortweet",
-	      "sensortweet <username:password>: post sensor data to Twitter",
-	      &sensortweet_process);
+PROCESS(eeprom_test_process, "EEPROM Test Process");
+AUTOSTART_PROCESSES(&eeprom_test_process);
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(sensortweet_process, ev, data)
+PROCESS_THREAD(eeprom_test_process, ev, data)
 {
-  char message[140];
-  char username_password[MAX_USERNAME_PASSWORD];
-  int temp;
-  uint16_t humidity;
-  uint16_t battery_indicator;
-  int humidity_converted;
+  static uint8_t counter = 0;
+
+  static eeprom_addr_t addr = 0;
+
   PROCESS_BEGIN();
 
-  /* Open the username/password file. */
-  if(data == NULL) {
-    PROCESS_EXIT();
-  }
-  strncpy(username_password, data, MAX_USERNAME_PASSWORD);
-  /*  username_password[len] = 0;*/
+  printf("eeprom-test: Size = %d bytes\n", EEPROM_SIZE);
 
-  temp = sht11_temp();
-  humidity = sht11_humidity();
-  battery_indicator = sht11_sreg() & 0x40? 1: 0;
+  /* Check to see if the EEPROM is empty */
+  for(addr = 0; addr < EEPROM_SIZE; ++addr) {
+    uint8_t byte;
 
-  humidity_converted = (int)(-4L + 405L * humidity / 10000L);
-  if(humidity_converted > 100) {
-    humidity_converted = 100;
+    eeprom_read(addr, &byte, 1);
+    if(byte != 0xFF) {
+      break;
+    }
   }
-  if(humidity_converted < 0) {
-    humidity_converted = 0;
-  }
-  
-  if(!battery_indicator) {
-    snprintf(message, sizeof(message), "Contiki #sensortweet %d.%d: Temperature %d.%d C, humidity %d%%",
-	     rimeaddr_node_addr.u8[0], rimeaddr_node_addr.u8[1],
-	     (temp / 10 - 396) / 10,
-	     (temp / 10 - 396) % 10,
-	     humidity_converted);
+
+  if(addr == EEPROM_SIZE) {
+    printf("eeprom-test: EEPROM is empty. Proceding with write test...\n");
+
+    counter = 0;
+    for(addr = 0; addr < EEPROM_SIZE; ++addr) {
+      eeprom_write(addr, &counter, 1);
+      counter += 1;
+    }
+
+    counter = 0;
+    for(addr = 0; addr < EEPROM_SIZE; ++addr) {
+      uint8_t byte;
+
+      eeprom_read(addr, &byte, 1);
+      if(byte != counter) {
+        printf("eeprom-test: EEPROM write failure!\n");
+        break;
+      }
+      counter += 1;
+    }
+
+    printf("eeprom-test: EEPROM write test success!\n");
   } else {
-    snprintf(message, sizeof(message), "Contiki #sensortweet %d.%d: Battery low",
-	     rimeaddr_node_addr.u8[0], rimeaddr_node_addr.u8[1]);
+    printf("eeprom-test: EEPROM is NOT empty! Skipping write test.\n");
   }
-
-  twitter_post((uint8_t *)username_password, message);
 
   PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-void
-shell_sensortweet_init(void)
-{
-  shell_register_command(&sensortweet_command);
 }
 /*---------------------------------------------------------------------------*/

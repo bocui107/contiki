@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Swedish Institute of Computer Science.
+ * Copyright (c) 2010, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,56 +26,27 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
  *
  */
 
-#include "contiki-net.h"
-#include "webserver-nogui.h"
+#ifndef __PROJECT_RPL_WEB_CONF_H__
+#define __PROJECT_RPL_WEB_CONF_H__
 
-static const struct uip_eth_addr ethaddr = {{0x00,0x06,0x98,0x01,0x02,0x29}};
+#define SICSLOWPAN_CONF_FRAG	     1
 
-/*---------------------------------------------------------------------------*/
-PROCESS(test_process, "Test");
-PROCESS(test_tcpip_process, "TCP/IP test");
-AUTOSTART_PROCESSES(&test_process, &test_tcpip_process, &webserver_nogui_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(test_process, ev, data)
-{
-  uip_ip6addr_t ip6addr;
-  static struct etimer etimer;
-  
-  PROCESS_BEGIN();
+/* Increase rpl-border-router IP-buffer when using 128. */
+#ifndef REST_MAX_CHUNK_SIZE
+#define REST_MAX_CHUNK_SIZE          64
+#endif
 
-  uip_ip6addr(&ip6addr, 0xfc00,0,0,0,0,0,0,0x232);  
-  uip_sethostaddr(&ip6addr);
-  uip_setethaddr(ethaddr);
+/* Multiplies with chunk size, be aware of memory constraints. */
+#ifndef COAP_MAX_OPEN_TRANSACTIONS
+#define COAP_MAX_OPEN_TRANSACTIONS   2
+#endif
 
-  uip_ip6addr(&ip6addr, 0xfc00,0,0,0,0,0,0,0x231);  
+/* Must be <= open transaction number. */
+#ifndef COAP_MAX_OBSERVERS
+#define COAP_MAX_OBSERVERS           COAP_MAX_OPEN_TRANSACTIONS-1
+#endif
 
-  tcp_connect(&ip6addr, UIP_HTONS(7), NULL);
-  
-  while(1) {
-    PROCESS_WAIT_EVENT();
-  }
-  
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(test_tcpip_process, ev, data)
-{
-  PROCESS_BEGIN();
-
-  tcp_listen(UIP_HTONS(800));
-
-  while(1) {
-    PROCESS_WAIT_EVENT_UNTIL(ev == tcpip_event);
-    if(uip_newdata()) {
-      ((char *)uip_appdata)[uip_datalen()] = 0;
-      printf("New uIP data: '%s'\n", uip_appdata);
-    }
-  }
-  
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
+#endif /* __PROJECT_RPL_WEB_CONF_H__ */
