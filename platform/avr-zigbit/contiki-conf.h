@@ -91,6 +91,9 @@ void clock_adjust_ticks(clock_time_t howmany);
 
 #define CCIF
 #define CLIF
+#ifndef CC_CONF_INLINE
+#define CC_CONF_INLINE inline
+#endif
 
 #define RIMEADDR_CONF_SIZE       8
 #define PACKETBUF_CONF_HDR_SIZE    0
@@ -160,7 +163,6 @@ void clock_adjust_ticks(clock_time_t howmany);
 #define UIP_CONF_IPV6_REASSEMBLY 0
 #define UIP_CONF_NETIF_MAX_ADDRESSES  3
 #define UIP_CONF_ND6_MAX_PREFIXES     3
-#define UIP_CONF_ND6_MAX_NEIGHBORS    4  
 #define UIP_CONF_ND6_MAX_DEFROUTERS   2
 #define UIP_CONF_UDP_CHECKSUMS   1
 #define UIP_CONF_TCP_SPLIT       1
