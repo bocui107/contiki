@@ -63,17 +63,22 @@ update_time(void)
 
   if (timerlist == NULL) {
     next_expiration = 0;
+  /*当没有时钟事件时(timerlist == NULL), 所以next_expiration也就是为0, 也就是下一个事件的时间为0 */
   } else {
     now = clock_time();
+    /* 获取当前的时间 */
     t = timerlist;
     /* Must calculate distance to next time into account due to wraps */
     tdist = t->timer.start + t->timer.interval - now;
+    /* 计算第一个时钟事件与下一个时间之间的间隔距离 */
     for(t = t->next; t != NULL; t = t->next) {
       if(t->timer.start + t->timer.interval - now < tdist) {
 	tdist = t->timer.start + t->timer.interval - now;
       }
+    /* 计算所有的时钟事件的间隔, 并且选择最小的时间间隔的时钟事件 */
     }
     next_expiration = now + tdist;
+    /* now + tdist = t->timer.start + t->timer.interval也就是下一个到期的时钟事件 */
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -93,6 +98,7 @@ PROCESS_THREAD(etimer_process, ev, data)
 
       while(timerlist != NULL && timerlist->p == p) {
 	timerlist = timerlist->next;
+      /* 如果timerlist有时间线程事件并且第一个时间事件的线程是对应退出的线程, 那么删除该事件 */
       }
 
       if(timerlist != NULL) {
@@ -103,20 +109,23 @@ PROCESS_THREAD(etimer_process, ev, data)
 	  } else
 	    t = t->next;
 	}
+      /* 如果timerlist不为NULL, 那么继续查找下一个时钟事件,直到最后一个为止 */
       }
       continue;
+      /* 接着继续执行下一个循环 */
     } else if(ev != PROCESS_EVENT_POLL) {
       continue;
     }
-
+    /* 如果是PROCESS_EVENT_POLL, 则略过,执行下次循环 */
   again:
     
     u = NULL;
     
     for(t = timerlist; t != NULL; t = t->next) {
       if(timer_expired(&t->timer)) {
+        /* 检测timer事件是否到期 */
 	if(process_post(t->p, PROCESS_EVENT_TIMER, t) == PROCESS_ERR_OK) {
-	  
+	/* 如果时间到了, 就发送PROCESS_EVENT_TIMER时间 */
 	  /* Reset the process ID of the event timer, to signal that the
 	     etimer has expired. This is later checked in the
 	     etimer_expired() function. */
@@ -126,12 +135,19 @@ PROCESS_THREAD(etimer_process, ev, data)
 	  } else {
 	    timerlist = t->next;
 	  }
+	  /* 如果t不是时间事件中的第一个事件(即u不为NULL), 则要把链表重新链接起来 */
 	  t->next = NULL;
+	  /* 删除该事件的next指针*/
 	  update_time();
 	  goto again;
+          /* 重新计算事件的到期时间, 然后继续执行下一个到期的事件. 这边一个很重要的事件:
+           * 当重新计算的时候又有时钟事件到期, 则会先执行时钟事件, 这边很容易会被时钟事件
+           * 占用太长时间而其他线程却得不到执行. 但是这边很可能认为时钟事件的优先级最高的
+	   * 事件 */
 	} else {
 	  etimer_request_poll();
 	}
+        /* 如果发送的时钟事件返回不是PROCESS_ERR_OK, 即操作不成功, 则请求poll */
       }
       u = t;
     }
@@ -153,7 +169,7 @@ add_timer(struct etimer *timer)
   struct etimer *t;
 
   etimer_request_poll();
-
+  /* 设置时钟事件为POLL, 让其优先执行 */
   if(timer->p != PROCESS_NONE) {
     for(t = timerlist; t != NULL; t = t->next) {
       if(t == timer) {
@@ -164,7 +180,7 @@ add_timer(struct etimer *timer)
       }
     }
   }
-
+  /* 检测timer是否已经在时钟事件链表中了, 如果已经存在, 则更新时钟戳 */
   /* Timer not on list. */
   timer->p = PROCESS_CURRENT();
   timer->next = timerlist;
