@@ -38,17 +38,14 @@
  */
 
 #include "net/netstack.h"
-/*---------------------------------------------------------------------------*/
-void
-netstack_init(void)
-{
-  NETSTACK_RADIO.init();
-  NETSTACK_RDC.init();
-  NETSTACK_MAC.init();
-  NETSTACK_NETWORK.init();
 
+void netstack_init(void)
+{
+	NETSTACK_RADIO.init();
+	NETSTACK_RDC.init();
+	NETSTACK_MAC.init();
+	NETSTACK_NETWORK.init();
 #ifdef NETSTACK_ENCRYPTION_INIT
-  NETSTACK_ENCRYPTION_INIT();
+	NETSTACK_ENCRYPTION_INIT();
 #endif /* NETSTACK_ENCRYPTION_INIT */
 }
-/*---------------------------------------------------------------------------*/

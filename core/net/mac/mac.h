@@ -52,50 +52,50 @@ void mac_call_sent_callback(mac_callback_t sent, void *ptr, int status, int num_
  * The structure of a MAC protocol driver in Contiki.
  */
 struct mac_driver {
-  char *name;
+	char *name;
 
-  /** Initialize the MAC driver */
-  void (* init)(void);
+	/** Initialize the MAC driver */
+	void (* init)(void);
 
-  /** Send a packet from the Rime buffer  */
-  void (* send)(mac_callback_t sent_callback, void *ptr);
+	/** Send a packet from the Rime buffer  */
+	void (* send)(mac_callback_t sent_callback, void *ptr);
 
-  /** Callback for getting notified of incoming packet. */
-  void (* input)(void);
-  
-  /** Turn the MAC layer on. */
-  int (* on)(void);
+	/** Callback for getting notified of incoming packet. */
+	void (* input)(void);
 
-  /** Turn the MAC layer off. */
-  int (* off)(int keep_radio_on);
+	/** Turn the MAC layer on. */
+	int (* on)(void);
 
-  /** Returns the channel check interval, expressed in clock_time_t ticks. */
-  unsigned short (* channel_check_interval)(void);
+	/** Turn the MAC layer off. */
+	int (* off)(int keep_radio_on);
+
+	/** Returns the channel check interval, expressed in clock_time_t ticks. */
+	unsigned short (* channel_check_interval)(void);
 };
 
 /* Generic MAC return values. */
 enum {
-  /**< The MAC layer transmission was OK. */
-  MAC_TX_OK,
+	/**< The MAC layer transmission was OK. */
+	MAC_TX_OK,
 
-  /**< The MAC layer transmission could not be performed due to a
-     collision. */
-  MAC_TX_COLLISION,
+	/**< The MAC layer transmission could not be performed due to a
+	collision. */
+	MAC_TX_COLLISION,
 
-  /**< The MAC layer did not get an acknowledgement for the packet. */
-  MAC_TX_NOACK,
+	/**< The MAC layer did not get an acknowledgement for the packet. */
+	MAC_TX_NOACK,
 
-  /**< The MAC layer deferred the transmission for a later time. */
-  MAC_TX_DEFERRED,
+	/**< The MAC layer deferred the transmission for a later time. */
+	MAC_TX_DEFERRED,
 
-  /**< The MAC layer transmission could not be performed because of an
-     error. The upper layer may try again later. */
-  MAC_TX_ERR,
+	/**< The MAC layer transmission could not be performed because of an
+	error. The upper layer may try again later. */
+	MAC_TX_ERR,
 
-  /**< The MAC layer transmission could not be performed because of a
-     fatal error. The upper layer does not need to try again, as the
-     error will be fatal then as well. */
-  MAC_TX_ERR_FATAL,
+	/**< The MAC layer transmission could not be performed because of a
+	fatal error. The upper layer does not need to try again, as the
+	error will be fatal then as well. */
+	MAC_TX_ERR_FATAL,
 };
 
 #endif /* __MAC_H__ */
