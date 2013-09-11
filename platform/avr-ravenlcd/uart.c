@@ -65,7 +65,7 @@ tcirc_buf rxbuf;
 void
 uart_init_circ_buf(tcirc_buf *cbuf)
 {
-    cbuf->head = cbuf->tail = 0;
+	cbuf->head = cbuf->tail = 0;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -79,19 +79,20 @@ uart_init_circ_buf(tcirc_buf *cbuf)
 void
 uart_add_to_circ_buf(tcirc_buf *cbuf, uint8_t ch)
 {
-    /* Add char to buffer */
-    uint8_t newhead = cbuf->head;
-    newhead++;
-    if (newhead >= BUFSIZE){
-        newhead = 0;
-    }
-    if (newhead == cbuf->tail){
-        /* Buffer full, quit it */
-        return;
-    }
+	/* Add char to buffer */
+	uint8_t newhead = cbuf->head;
 
-    cbuf->buf[cbuf->head] = ch;
-    cbuf->head = newhead;
+	newhead++;
+
+	if (newhead >= BUFSIZE)
+		newhead = 0;
+
+	if (newhead == cbuf->tail)
+		/* Buffer full, quit it */
+		return;
+
+	cbuf->buf[cbuf->head] = ch;
+	cbuf->head = newhead;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -106,19 +107,20 @@ uart_add_to_circ_buf(tcirc_buf *cbuf, uint8_t ch)
 uint8_t
 uart_get_from_circ_buf(tcirc_buf *cbuf)
 {
-    /* Get char from buffer. */
-    /* Be sure to check first that there is a char in buffer. */
-    uint8_t newtail = cbuf->tail;
-    uint8_t retval = cbuf->buf[newtail];
+	/* Get char from buffer. */
+	/* Be sure to check first that there is a char in buffer. */
+	uint8_t newtail = cbuf->tail;
+	uint8_t retval = cbuf->buf[newtail];
 
-    newtail++;
-    if (newtail >= BUFSIZE){
-        /* Rollover */
-        newtail = 0;
-    }
-    cbuf->tail = newtail;
+	newtail++;
 
-    return retval;
+	if (newtail >= BUFSIZE)
+		/* Rollover */
+		newtail = 0;
+
+	cbuf->tail = newtail;
+
+	return retval;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -129,7 +131,7 @@ uart_get_from_circ_buf(tcirc_buf *cbuf)
 void
 uart_clear_rx_buf(void)
 {
-    rxbuf.tail = rxbuf.head = 0;
+	rxbuf.tail = rxbuf.head = 0;
 }
 
 /**
@@ -142,8 +144,8 @@ uart_clear_rx_buf(void)
 uint8_t
 uart_circ_buf_has_char(tcirc_buf *cbuf)
 {
-    /* Return true if buffer empty */
-    return (cbuf->head != cbuf->tail);
+	/* Return true if buffer empty */
+	return (cbuf->head != cbuf->tail);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -158,13 +160,11 @@ uart_circ_buf_has_char(tcirc_buf *cbuf)
 uint8_t
 uip_ntohex(uint8_t val)
 {
-    /* Convert nibble to hex */
-    if (val > 9){
-        return val + 'A' - 10;
-    }
-    else{
-        return val + '0';
-    }
+	/* Convert nibble to hex */
+	if (val > 9)
+		return val + 'A' - 10;
+	else
+		return val + '0';
 }
 
 /*---------------------------------------------------------------------------*/
@@ -178,8 +178,8 @@ uip_ntohex(uint8_t val)
 void
 itohex(uint8_t val,char *str)
 {
-    *str++ = uip_ntohex(val >> 8);
-    *str = uip_ntohex(val & 0x0f);
+	*str++ = uip_ntohex(val >> 8);
+	*str = uip_ntohex(val & 0x0f);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -190,23 +190,23 @@ itohex(uint8_t val,char *str)
  *
  *   \retval TIMEOUT Returns if timeout has occured.
  *   \return retval Character returned upon seeing rx_char_ready()
-*/
+ */
 uint8_t
 uart_get_char_rx(void)
 {
-    /* Gets a serial char, and waits for timeout */
-    uint32_t timex = 5000000;
-    uint8_t retval;
+	/* Gets a serial char, and waits for timeout */
+	uint32_t timex = 5000000;
+	uint8_t retval;
 
-    while (!rx_char_ready()){
-        if (!timex--){
-            /* Timeout, return timeout */
-            return TIMEOUT;
-        }
-    }
+	while (!rx_char_ready()){
+		if (!timex--)
+			/* Timeout, return timeout */
+			return TIMEOUT;
+	}
 
-    retval = uart_get_from_circ_buf(&rxbuf);
-    return retval;
+	retval = uart_get_from_circ_buf(&rxbuf);
+
+	return retval;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -214,37 +214,37 @@ uart_get_char_rx(void)
 /**
  *   \brief Initialize UART to 38400 Baud Rate and only
  *   enable UART for transmission.
-*/
+ */
 void
 uart_init(void)
 {
-    /* For Mega3290P, enable the uart peripheral */
-    PRR &= ~(1 << PRUSART0);
+	/* For Mega3290P, enable the uart peripheral */
+	PRR &= ~(1 << PRUSART0);
 
-    uart_clear_rx_buf();
-    /* 38400 baud @ 8 MHz internal RC oscillator (error = 0.2%) */
-    UBRR0 = BAUD_RATE_38400;
+	uart_clear_rx_buf();
+	/* 38400 baud @ 8 MHz internal RC oscillator (error = 0.2%) */
+	UBRR0 = BAUD_RATE_38400;
 
-    /* 8 bit character size, 1 stop bit and no parity mode */
-    UCSR0C = ( 3 << UCSZ00);
+	/* 8 bit character size, 1 stop bit and no parity mode */
+	UCSR0C = ( 3 << UCSZ00);
 
-    /* Enable RX,TX and RX interrupt on USART */
-    UCSR0B = (1 << RXEN0)|(1 << TXEN0)|(1 << RXCIE0);
+	/* Enable RX,TX and RX interrupt on USART */
+	UCSR0B = (1 << RXEN0)|(1 << TXEN0)|(1 << RXCIE0);
 }
 
 /*---------------------------------------------------------------------------*/
 
 /**
  *   \brief Turn off UART for sleep mode.
-*/
+ */
 void
 uart_deinit(void)
 {
-    /* Disable RX,TX and RX interrupt on USART */
-    UCSR0B = 0;
+	/* Disable RX,TX and RX interrupt on USART */
+	UCSR0B = 0;
 
-    /* for Mega3290P, disable the uart peripheral */
-    PRR |= (1 << PRUSART0);
+	/* for Mega3290P, disable the uart peripheral */
+	PRR |= (1 << PRUSART0);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -253,32 +253,33 @@ uart_deinit(void)
  *   \brief Send one byte over the uart. This is called to send binary commands.
  *
  *   \param byte The byte of data to send out the uart.
-*/
+ */
 void
 uart_send_byte(uint8_t byte)
 {
-    /* Wait for last char to be gone... */
-    while(!(UCSR0A & (1 << UDRE0)))
-        ;
-    UDR0 = byte;
+	/* Wait for last char to be gone... */
+	while(!(UCSR0A & (1 << UDRE0)))
+		;
 
-    /* Clear the TXC bit to allow transmit complete test before sleep*/
-    UCSR0A |=(1 << TXC0);
+	UDR0 = byte;
+
+	/* Clear the TXC bit to allow transmit complete test before sleep*/
+	UCSR0A |=(1 << TXC0);
 }
 
 /*---------------------------------------------------------------------------*/
 
 /**
  *   \brief This is the USART RX complete interrupt.
-*/
+ */
 ISR
 (USART_RX_vect)
 {
-    /* Get byte from serial port, put in Rx Buffer. */
-    uint8_t retval;
+	/* Get byte from serial port, put in Rx Buffer. */
+	uint8_t retval;
 
-    retval = UDR0;
-    uart_add_to_circ_buf(&rxbuf, retval);
+	retval = UDR0;
+	uart_add_to_circ_buf(&rxbuf, retval);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -294,16 +295,18 @@ ISR
 void
 uart_serial_send_frame(uint8_t cmd, uint8_t payload_length, uint8_t *payload)
 {
-    /* Send a frame to 1284p */
-    int8_t i;
+	/* Send a frame to 1284p */
+	int8_t i;
 
-    uart_send_byte(SOF_CHAR);
-    uart_send_byte(payload_length);
-    uart_send_byte(cmd);
-    for (i=0;i<=payload_length-1;i++){
-   	    uart_send_byte(payload[i]);
-   	}
-    uart_send_byte(EOF_CHAR);
+	uart_send_byte(SOF_CHAR);
+	uart_send_byte(payload_length);
+	uart_send_byte(cmd);
+
+	for (i = 0; i <= payload_length - 1; i++){
+		uart_send_byte(payload[i]);
+	}
+
+	uart_send_byte(EOF_CHAR);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -313,14 +316,14 @@ uart_serial_send_frame(uint8_t cmd, uint8_t payload_length, uint8_t *payload)
  *   reason x.
  *
  *   \param x Reason for USART time out.
-*/
+ */
 void
 uart_timeout_msg(uint8_t x)
 {
-    char str[20] = "TO     ";
+	char str[20] = "TO     ";
 
-    dectoascii(x, str+3);
-    lcd_puts(str);
+	dectoascii(x, str+3);
+	lcd_puts(str);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -335,124 +338,123 @@ uart_timeout_msg(uint8_t x)
  *
  *   \param wait_for_ack Flag used to wait for acknowledgement when receving a serial
  *   frame.
-*/
+ */
 void
 uart_serial_rcv_frame(uint8_t wait_for_ack)
 {
-    /* Gets a serial frame, if any, and displays data appropriately */
-    /* If wait_for_ack is true, this funtion will wait for serial chars. */
-    volatile uint8_t ch;
-    volatile uint8_t length;
-    volatile uint8_t cmd;
-    volatile uint8_t payload[20];
-    uint16_t i;
+	/* Gets a serial frame, if any, and displays data appropriately */
+	/* If wait_for_ack is true, this funtion will wait for serial chars. */
+	volatile uint8_t ch;
+	volatile uint8_t length;
+	volatile uint8_t cmd;
+	volatile uint8_t payload[20];
+	uint16_t i;
 
-    if (!wait_for_ack && !rx_char_ready()){
-        return;
-    }
+	if (!wait_for_ack && !rx_char_ready())
+		return;
 
-    /* Check for SOF */
-    ch = uart_get_char_rx();
-    if (ch != SOF_CHAR){
-        return uart_timeout_msg(1);
-    }
+	/* Check for SOF */
+	ch = uart_get_char_rx();
+	if (ch != SOF_CHAR)
+		return uart_timeout_msg(1);
 
-    /* Turn on nose LED for activity indicator */
-    led_on();
+	/* Turn on nose LED for activity indicator */
+	led_on();
 
-    /* Get length byte */
-    ch = uart_get_char_rx();
-    if (ch == TIMEOUT){
-        return uart_timeout_msg(2);
-    }
-    /* Check for ACK Frame */
-    if (ch >= 0x80){
-        /* This is an ack frame, just get it and go away. */
-        ch = uart_get_char_rx();
-        if (ch != EOF_CHAR){
-            uart_timeout_msg(3);
-        }
-        led_off();
-        return;
-    }
+	/* Get length byte */
+	ch = uart_get_char_rx();
+	if (ch == TIMEOUT)
+		return uart_timeout_msg(2);
 
-    length = ch;
-    if (length > sizeof(payload)){
-        /* invalid length */
-        return;
-    }
+	/* Check for ACK Frame */
+	if (ch >= 0x80) {
+		/* This is an ack frame, just get it and go away. */
+		ch = uart_get_char_rx();
+		if (ch != EOF_CHAR)
+			uart_timeout_msg(3);
 
-    /* Get cmd byte */
-    ch = uart_get_char_rx();
-    if (ch == TIMEOUT){
-        return uart_timeout_msg(5);
-    }
-    cmd = ch;
+		led_off();
+		return;
+	}
 
-    /* Get payload */
-    for (i=0;i<length;i++){
-        ch = uart_get_char_rx();
-        if (ch == TIMEOUT){
-            return uart_timeout_msg(i);
-        }
-        /* Save payload */
-        payload[i] = ch;
-    }
+	length = ch;
+	if (length > sizeof(payload))
+		/* invalid length */
+		return;
 
-    /* Get EOF */
-    ch = uart_get_char_rx();
-    if (ch != EOF_CHAR){
-        return uart_timeout_msg(7);
-    }
+	/* Get cmd byte */
+	ch = uart_get_char_rx();
+	if (ch == TIMEOUT)
+		return uart_timeout_msg(5);
 
-    /* Process the received command */
-    switch (cmd){
-        case REPORT_PING:
-            /*
-             * This will update the lcd with the current ping status.
-             * Store the sequence number away.
-             */
-            ping_response = payload[0];
+	cmd = ch;
 
-            if(ping_response == 1){
-                lcd_single_print_dig(ping_response, 3);
-            }
-            else if(ping_response == 2){
-                lcd_single_print_dig(ping_response, 2);
-            }
-            else if(ping_response == 3){
-                lcd_single_print_dig(ping_response, 1);
-            }
-            else if(ping_response == 4){
-                lcd_single_print_dig(ping_response, 0);
-            }
+	/* Get payload */
+	for (i = 0; i < length; i++){
+		ch = uart_get_char_rx();
+		if (ch == TIMEOUT)
+			return uart_timeout_msg(i);
 
-            timeout_flag = false;
+		/* Save payload */
+		payload[i] = ch;
+	}
 
-            /* Beep on successful ping response. */
-            lcd_symbol_set(LCD_SYMBOL_BELL);
-            beep();
-            lcd_symbol_clr(LCD_SYMBOL_BELL);
-            break;
-        case REPORT_TEXT_MSG:
-            /* Copy text message to menu buffer and play ringtone */
-            /* Prezero in case no string terminator in command */
-            for (i=0;i<sizeof(top_menu_text);i++) top_menu_text[i]=0;
-            memcpy(&top_menu_text,(char *)payload,sizeof(top_menu_text)-1);  //leave zero byte at end
-            play_ringtone();
-            break;
-        case REPORT_PING_BEEP:
-            lcd_symbol_set(LCD_SYMBOL_BELL);
-            beep();
-            lcd_symbol_clr(LCD_SYMBOL_BELL);
-            break;
-        case REPORT_WAKE:
-            /* Indicates 1284 is awake*/
-            break;
-        default:
-            break;
-    }
-    led_off();
+	/* Get EOF */
+	ch = uart_get_char_rx();
+	if (ch != EOF_CHAR)
+		return uart_timeout_msg(7);
+
+	/* Process the received command */
+	switch (cmd){
+	case REPORT_PING:
+		/*
+		 * This will update the lcd with the current ping status.
+		 * Store the sequence number away.
+		 */
+		ping_response = payload[0];
+
+		if(ping_response == 1)
+			lcd_single_print_dig(ping_response, 3);
+		else if(ping_response == 2)
+			lcd_single_print_dig(ping_response, 2);
+		else if(ping_response == 3)
+			lcd_single_print_dig(ping_response, 1);
+		else if(ping_response == 4)
+			lcd_single_print_dig(ping_response, 0);
+
+		timeout_flag = false;
+
+		/* Beep on successful ping response. */
+		lcd_symbol_set(LCD_SYMBOL_BELL);
+		beep();
+		lcd_symbol_clr(LCD_SYMBOL_BELL);
+
+		break;
+	case REPORT_TEXT_MSG:
+		/* Copy text message to menu buffer and play ringtone */
+		/* Prezero in case no string terminator in command */
+		for (i = 0; i < sizeof(top_menu_text); i++)
+			top_menu_text[i] = 0;
+
+		memcpy(&top_menu_text, (char *)payload, sizeof(top_menu_text) - 1);//leave zero byte at end
+
+		play_ringtone();
+
+		break;
+	case REPORT_PING_BEEP:
+		lcd_symbol_set(LCD_SYMBOL_BELL);
+		beep();
+		lcd_symbol_clr(LCD_SYMBOL_BELL);
+
+		break;
+	case REPORT_WAKE:
+		/* Indicates 1284 is awake*/
+		break;
+	default:
+		break;
+	}
+
+	led_off();
 }
 
 /** \}   */

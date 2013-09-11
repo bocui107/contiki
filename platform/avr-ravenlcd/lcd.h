@@ -51,9 +51,11 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #define LCD_SYMBOL_FISRT      0
 #define LCD_SYMBOL_COUNT     34
+
+#define LCD_ALPHA_DIGIT_COUNT	7
+#define LCD_NUM_DIGIT_COUNT	4
 
 /* Duplicate usage of segments */
 #define LCD_SYMBOL_ARR_UP  LCD_SYMBOL_ENV_OP
@@ -70,13 +72,13 @@
  e   c
  - d -
 */
-#define NUM_LCD_SYMBOL_A 0x01
-#define NUM_LCD_SYMBOL_B 0x02
-#define NUM_LCD_SYMBOL_C 0x04
-#define NUM_LCD_SYMBOL_D 0x08
-#define NUM_LCD_SYMBOL_E 0x10
-#define NUM_LCD_SYMBOL_F 0x20
-#define NUM_LCD_SYMBOL_G 0x40
+#define NS_A 0x01
+#define NS_B 0x02
+#define NS_C 0x04
+#define NS_D 0x08
+#define NS_E 0x10
+#define NS_F 0x20
+#define NS_G 0x40
 /** @} */
 
 /** @name Constant defines for indexing seg_map[] table */
@@ -101,186 +103,224 @@
 #define LCD_SEV_SEG_INDEX_MINUS (17)
 /** @} */
 
+/** { Constant defines for making LCD_character_table[] table */
+/** @{ */
+/*
+ -- a --
+|\  |  /|
+f h i j b
+|  \|/  |
+|-g1-g2-|
+|  /|\  |
+e m l k c
+|/  |  \|
+ -- d --
+*/
+#define AS_A    0x0004
+#define AS_B    0x0080
+#define AS_C    0x8000
+#define AS_D    0x1000
+#define AS_E    0x0100
+#define AS_F    0x0001
+#define AS_G1   0x0010
+#define AS_G2   0x0800
+#define AS_H    0x0002
+#define AS_I    0x0020
+#define AS_J    0x0040
+#define AS_K    0x0400
+#define AS_L    0x2000
+#define AS_M    0x0200
+/** @} */
+
 #define lcd_symbol_set_all() lcd_symbol_set_group(0, sizeof(lcd_symbol_chart))
 #define lcd_symbol_clr_all() lcd_symbol_clr_group(0, sizeof(lcd_symbol_chart))
 
 typedef enum {
-    LCD_NUM_PADDING_ZERO,
-    LCD_NUM_PADDING_SPACE
+	LCD_NUM_PADDING_ZERO,
+	LCD_NUM_PADDING_SPACE
 } lcd_padding_t;
 
+/** \brief Type used to set/clear symbols
+ *
+ * The values of this enumerator is built up of bit offset and memory
+ * offset for the symbol in the LCD meomory
+ */
+
 typedef enum {
-/*  name               = (bit_number << bit_number_offset) | mem_offset*/
-    /* Raven */
-    LCD_SYMBOL_RAVEN   = (7<<5) |  3,
+	/*  name		= (bit_number << bit_number_offset) | mem_offset*/
+	/* Raven */
+	LCD_SYMBOL_RAVEN	= (7 << 5) |  3,
 
-    /* Audio */
-    LCD_SYMBOL_BELL    = (2<<5) | 17,
-    LCD_SYMBOL_TONE    = (6<<5) | 17,
-    LCD_SYMBOL_MIC     = (3<<5) |  3,
-    LCD_SYMBOL_SPEAKER = (2<<5) | 18,
+	/* Audio */
+	LCD_SYMBOL_BELL		= (2 << 5) | 17,
+	LCD_SYMBOL_TONE		= (6 << 5) | 17,
+	LCD_SYMBOL_MIC		= (3 << 5) |  3,
+	LCD_SYMBOL_SPEAKER	= (2 << 5) | 18,
 
-    /* Status */
-    LCD_SYMBOL_KEY     = (3<<5) |  2,
-    LCD_SYMBOL_ATT     = (7<<5) |  2,
+	/* Status */
+	LCD_SYMBOL_KEY		= (3 << 5) |  2,
+	LCD_SYMBOL_ATT		= (7 << 5) |  2,
 
-    /* Time */
-    LCD_SYMBOL_SUN     = (6<<5) | 13,
-    LCD_SYMBOL_MOON    = (6<<5) |  3,
-    LCD_SYMBOL_AM      = (2<<5) | 15,
-    LCD_SYMBOL_PM      = (6<<5) | 15,
+	/* Time */
+	LCD_SYMBOL_SUN		= (6 << 5) | 13,
+	LCD_SYMBOL_MOON		= (6 << 5) |  3,
+	LCD_SYMBOL_AM		= (2 << 5) | 15,
+	LCD_SYMBOL_PM		= (6 << 5) | 15,
 
-    /* Radio commuication status */
-    LCD_SYMBOL_RX      = (6<<5) | 18,
-    LCD_SYMBOL_TX      = (5<<5) | 13,
-    LCD_SYMBOL_IP      = (7<<5) | 13,
-    LCD_SYMBOL_PAN     = (7<<5) | 18,
-    LCD_SYMBOL_ZLINK   = (5<<5) |  8,
-    LCD_SYMBOL_ZIGBEE  = (5<<5) |  3,
+	/* Radio commuication status */
+	LCD_SYMBOL_RX		= (6 << 5) | 18,
+	LCD_SYMBOL_TX		= (5 << 5) | 13,
+	LCD_SYMBOL_IP		= (7 << 5) | 13,
+	LCD_SYMBOL_PAN		= (7 << 5) | 18,
+	LCD_SYMBOL_ZLINK	= (5 << 5) |  8,
+	LCD_SYMBOL_ZIGBEE	= (5 << 5) |  3,
 
-    /* Antenna status */
-    LCD_SYMBOL_ANT_FOOT= (5<<5) | 18,
-    LCD_SYMBOL_ANT_SIG1= (3<<5) |  0,
-    LCD_SYMBOL_ANT_SIG2= (7<<5) |  0,
-    LCD_SYMBOL_ANT_SIG3= (3<<5) |  1,
-    LCD_SYMBOL_ANT_DIS = (7<<5) |  1,
+	/* Antenna status */
+	LCD_SYMBOL_ANT_FOOT	= (5 << 5) | 18,
+	LCD_SYMBOL_ANT_SIG1	= (3 << 5) |  0,
+	LCD_SYMBOL_ANT_SIG2	= (7 << 5) |  0,
+	LCD_SYMBOL_ANT_SIG3	= (3 << 5) |  1,
+	LCD_SYMBOL_ANT_DIS	= (7 << 5) |  1,
 
-    /* Battery status */
-    LCD_SYMBOL_BAT_CONT= (4<<5) | 18,
-    LCD_SYMBOL_BAT_CAP1= (4<<5) |  3,
-    LCD_SYMBOL_BAT_CAP2= (4<<5) |  8,
-    LCD_SYMBOL_BAT_CAP3= (4<<5) | 13,
+	/* Battery status */
+	LCD_SYMBOL_BAT_CONT	= (4 << 5) | 18,
+	LCD_SYMBOL_BAT_CAP1	= (4 << 5) |  3,
+	LCD_SYMBOL_BAT_CAP2	= (4 << 5) |  8,
+	LCD_SYMBOL_BAT_CAP3	= (4 << 5) | 13,
 
-    /* Envelope status */
-    LCD_SYMBOL_ENV_OP  = (6<<5) |  8,
-    LCD_SYMBOL_ENV_CL  = (0<<5) |  4,
-    LCD_SYMBOL_ENV_MAIN= (2<<5) |  4,
+	/* Envelope status */
+	LCD_SYMBOL_ENV_OP	= (6 << 5) |  8,
+	LCD_SYMBOL_ENV_CL	= (0 << 5) |  4,
+	LCD_SYMBOL_ENV_MAIN	= (2 << 5) |  4,
 
-    /* Temperature */
-    LCD_SYMBOL_C       = (6<<5) | 16,
-    LCD_SYMBOL_F       = (2<<5) | 16,
+	/* Temperature */
+	LCD_SYMBOL_C		= (6 << 5) | 16,
+	LCD_SYMBOL_F		= (2 << 5) | 16,
 
-    /* Numeric */
-    LCD_SYMBOL_MINUS   = (7<<5) |  8,
-    LCD_SYMBOL_DOT     = (4<<5) |  4,
-    LCD_SYMBOL_COL     = (6<<5) |  4,
+	/* Numeric */
+	LCD_SYMBOL_MINUS	= (7 << 5) |  8,
+	LCD_SYMBOL_DOT		= (4 << 5) |  4,
+	LCD_SYMBOL_COL		= (6 << 5) |  4,
 } lcd_symbol_t;
 
 typedef enum {
-    LCD_WAVE_DEFAULT   = 0,
-    LCD_WAVE_LOW_POWER = 1
+	LCD_WAVE_DEFAULT   = 0,
+	LCD_WAVE_LOW_POWER = 1
 } lcd_wave_t;
 
 typedef enum {
-    LCD_BUFFER_ON  = 0,
-    LCD_BUFFER_OFF = 1
+	LCD_BUFFER_ON  = 0,
+	LCD_BUFFER_OFF = 1
 } lcd_buffer_t;
 
 typedef enum {
-    LCD_BLANKING_OFF = 0,
-    LCD_BLANKING_ON  = 1
+	LCD_BLANKING_OFF = 0,
+	LCD_BLANKING_ON  = 1
 } lcd_blanking_t;
 
 typedef enum {
-    LCD_CLOCK_SYSTEM = 0,
-    LCD_CLOCK_EXTERN = 1
+	LCD_CLOCK_SYSTEM = 0,
+	LCD_CLOCK_EXTERN = 1
 } lcd_clock_t;
 
 typedef enum {
-    LCD_BIAS_THIRD = 0,
-    LCD_BIAS_HALF  = 1
+	LCD_BIAS_THIRD = 0,
+	LCD_BIAS_HALF  = 1
 } lcd_bias_t;
 
 typedef enum {
-    LCD_PRESCL_16   = 0x0,
-    LCD_PRESCL_64   = 0x1,
-    LCD_PRESCL_128  = 0x2,
-    LCD_PRESCL_256  = 0x3,
-    LCD_PRESCL_512  = 0x4,
-    LCD_PRESCL_1024 = 0x5,
-    LCD_PRESCL_2048 = 0x6,
-    LCD_PRESCL_4096 = 0x7,
+	LCD_PRESCL_16   = 0x0,
+	LCD_PRESCL_64   = 0x1,
+	LCD_PRESCL_128  = 0x2,
+	LCD_PRESCL_256  = 0x3,
+	LCD_PRESCL_512  = 0x4,
+	LCD_PRESCL_1024 = 0x5,
+	LCD_PRESCL_2048 = 0x6,
+	LCD_PRESCL_4096 = 0x7,
 } lcd_prescl_t;
 
 typedef enum {
-    LCD_DIV_1 = 0,
-    LCD_DIV_2 = 1,
-    LCD_DIV_3 = 2,
-    LCD_DIV_4 = 3,
-    LCD_DIV_5 = 4,
-    LCD_DIV_6 = 5,
-    LCD_DIV_7 = 6,
-    LCD_DIV_8 = 7
+	LCD_DIV_1 = 0,
+	LCD_DIV_2 = 1,
+	LCD_DIV_3 = 2,
+	LCD_DIV_4 = 3,
+	LCD_DIV_5 = 4,
+	LCD_DIV_6 = 5,
+	LCD_DIV_7 = 6,
+	LCD_DIV_8 = 7
 } lcd_div_t;
 
 /** Bit LCDDC2:0 and LCMDT */
 typedef enum {
-    LCD_DRIVE_300  = 0x0,
-    LCD_DRIVE_70   = 0x2,
-    LCD_DRIVE_150  = 0x4,
-    LCD_DRIVE_450  = 0x6,
-    LCD_DRIVE_575  = 0x8,
-    LCD_DRIVE_850  = 0xA,
-    LCD_DRIVE_1150 = 0xC,
-    LCD_DRIVE_HALF = 0xE,
-    LCD_DRIVE_FULL = 0xF
+	LCD_DRIVE_300  = 0x0,
+	LCD_DRIVE_70   = 0x2,
+	LCD_DRIVE_150  = 0x4,
+	LCD_DRIVE_450  = 0x6,
+	LCD_DRIVE_575  = 0x8,
+	LCD_DRIVE_850  = 0xA,
+	LCD_DRIVE_1150 = 0xC,
+	LCD_DRIVE_HALF = 0xE,
+	LCD_DRIVE_FULL = 0xF
 } lcd_drive_t;
 
 typedef enum {
-    LCD_CONTRAST_2_60 = 0x0,
-    LCD_CONTRAST_2_65 = 0x1,
-    LCD_CONTRAST_2_70 = 0x2,
-    LCD_CONTRAST_2_75 = 0x3,
-    LCD_CONTRAST_2_80 = 0x4,
-    LCD_CONTRAST_2_85 = 0x5,
-    LCD_CONTRAST_2_90 = 0x6,
-    LCD_CONTRAST_2_95 = 0x7,
-    LCD_CONTRAST_3_00 = 0x8,
-    LCD_CONTRAST_3_05 = 0x9,
-    LCD_CONTRAST_3_10 = 0xA,
-    LCD_CONTRAST_3_15 = 0xB,
-    LCD_CONTRAST_3_20 = 0xC,
-    LCD_CONTRAST_3_25 = 0xD,
-    LCD_CONTRAST_3_30 = 0xE,
-    LCD_CONTRAST_3_35 = 0xF
+	LCD_CONTRAST_2_60 = 0x0,
+	LCD_CONTRAST_2_65 = 0x1,
+	LCD_CONTRAST_2_70 = 0x2,
+	LCD_CONTRAST_2_75 = 0x3,
+	LCD_CONTRAST_2_80 = 0x4,
+	LCD_CONTRAST_2_85 = 0x5,
+	LCD_CONTRAST_2_90 = 0x6,
+	LCD_CONTRAST_2_95 = 0x7,
+	LCD_CONTRAST_3_00 = 0x8,
+	LCD_CONTRAST_3_05 = 0x9,
+	LCD_CONTRAST_3_10 = 0xA,
+	LCD_CONTRAST_3_15 = 0xB,
+	LCD_CONTRAST_3_20 = 0xC,
+	LCD_CONTRAST_3_25 = 0xD,
+	LCD_CONTRAST_3_30 = 0xE,
+	LCD_CONTRAST_3_35 = 0xF
 } lcd_contrast_t;
 
 typedef struct {
-    union {
-        struct {
-            unsigned int    blanking: 1;
-            unsigned int            : 1;
-            unsigned int    buffer  : 1;
-            unsigned int            : 3;
-            unsigned int    wave    : 1;
-            unsigned int            : 1;
-        };
-        uint8_t             lcdcra;
-    };
-    union {
-        struct {
-            unsigned int            : 6;
-            unsigned int    bias    : 1;
-            unsigned int    clock   : 1;
-        };
-        uint8_t             lcdcrb;
-    };
-    union {
-        struct {
-            unsigned int    div     : 3;
-            unsigned int            : 1;
-            unsigned int    prescl  : 3;
-            unsigned int            : 1;
-        };
-        uint8_t             lcdfrr;
-    };
-    union {
-        struct {
-            unsigned int    contrast: 4;
-            unsigned int    drive   : 4;
-        };
-        uint8_t             lcdccr;
-    };
+	union {
+		struct {
+			unsigned int blanking: 1;
+			unsigned int         : 1;
+			unsigned int buffer  : 1;
+			unsigned int         : 3;
+			unsigned int wave    : 1;
+			unsigned int         : 1;
+		};
+		uint8_t lcdcra;
+	};
+
+	union {
+		struct {
+			unsigned int         : 6;
+			unsigned int bias    : 1;
+			unsigned int clock   : 1;
+		};
+		uint8_t lcdcrb;
+	};
+
+	union {
+		struct {
+			unsigned int div     : 3;
+			unsigned int         : 1;
+			unsigned int prescl  : 3;
+			unsigned int         : 1;
+		};
+		uint8_t lcdfrr;
+	};
+
+	union {
+		struct {
+			unsigned int contrast: 4;
+			unsigned int drive   : 4;
+		};
+		uint8_t lcdccr;
+	};
 } lcd_config_t;
 
 /*========================= PUBLIC VARIABLES         =========================*/

@@ -75,12 +75,12 @@
 /** \} */
 
 typedef enum {
-    KEY_UP      = 0x01,
-    KEY_DOWN    = 0x02,
-    KEY_LEFT    = 0x04,
-    KEY_RIGHT   = 0x08,
-    KEY_ENTER   = 0x10,
-    KEY_NO_KEY  = 0x00
+	KEY_UP      = 0x01,
+	KEY_DOWN    = 0x02,
+	KEY_LEFT    = 0x04,
+	KEY_RIGHT   = 0x08,
+	KEY_ENTER   = 0x10,
+	KEY_NO_KEY  = 0x00
 }key_state_t;
 
 extern key_state_t button;

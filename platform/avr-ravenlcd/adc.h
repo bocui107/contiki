@@ -47,30 +47,30 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define adc_conversion_ongoing (ADCSRA |= (1<<ADSC))
-#define adc_conversion_done (!(ADCSRA |= (1<<ADSC)))
+#define adc_conversion_ongoing (ADCSRA |= (1 << ADSC))
+#define adc_conversion_done (!(ADCSRA |= (1 << ADSC)))
 
 /** \brief Lists the different ways in which the ADC can be triggered. */
 typedef enum {
-    ADC_TRIG_FREE_RUN   =   ((0<<ADTS2)|(0<<ADTS1)|(0<<ADTS0)),
-    ADC_TRIG_ANACOMP    =   ((0<<ADTS2)|(0<<ADTS1)|(1<<ADTS0)),
-    ADC_TRIG_EXTINT0    =   ((0<<ADTS2)|(1<<ADTS1)|(0<<ADTS0)),
-    ADC_TRIG_TIM0_COMPA =   ((0<<ADTS2)|(1<<ADTS1)|(1<<ADTS0)),
-    ADC_TRIG_TIM0_OVF   =   ((1<<ADTS2)|(0<<ADTS1)|(0<<ADTS0)),
-    ADC_TRIG_TIM1_COMPB =   ((1<<ADTS2)|(0<<ADTS1)|(1<<ADTS0)),
-    ADC_TRIG_TIM1_OVF   =   ((1<<ADTS2)|(1<<ADTS1)|(0<<ADTS0)),
-    ADC_TRIG_TIM1_CAPT  =   ((1<<ADTS2)|(1<<ADTS1)|(1<<ADTS0))
+	ADC_TRIG_FREE_RUN   =   ((0 << ADTS2)|(0 << ADTS1)|(0 << ADTS0)),
+	ADC_TRIG_ANACOMP    =   ((0 << ADTS2)|(0 << ADTS1)|(1 << ADTS0)),
+	ADC_TRIG_EXTINT0    =   ((0 << ADTS2)|(1 << ADTS1)|(0 << ADTS0)),
+	ADC_TRIG_TIM0_COMPA =   ((0 << ADTS2)|(1 << ADTS1)|(1 << ADTS0)),
+	ADC_TRIG_TIM0_OVF   =   ((1 << ADTS2)|(0 << ADTS1)|(0 << ADTS0)),
+	ADC_TRIG_TIM1_COMPB =   ((1 << ADTS2)|(0 << ADTS1)|(1 << ADTS0)),
+	ADC_TRIG_TIM1_OVF   =   ((1 << ADTS2)|(1 << ADTS1)|(0 << ADTS0)),
+	ADC_TRIG_TIM1_CAPT  =   ((1 << ADTS2)|(1 << ADTS1)|(1 << ADTS0))
 } adc_trig_t;
 
 /** \brief Lists a variety of prescalers used with the ADC. */
 typedef enum {
-    ADC_PS_2   = ((0<<ADPS2)|(0<<ADPS1)|(1<<ADPS0)),
-    ADC_PS_4   = ((0<<ADPS2)|(1<<ADPS1)|(0<<ADPS0)),
-    ADC_PS_8   = ((0<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)),
-    ADC_PS_16  = ((1<<ADPS2)|(0<<ADPS1)|(0<<ADPS0)),
-    ADC_PS_32  = ((1<<ADPS2)|(0<<ADPS1)|(1<<ADPS0)),
-    ADC_PS_64  = ((1<<ADPS2)|(1<<ADPS1)|(0<<ADPS0)),
-    ADC_PS_128 = ((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0))
+	ADC_PS_2   = ((0 << ADPS2)|(0 << ADPS1)|(1 << ADPS0)),
+	ADC_PS_4   = ((0 << ADPS2)|(1 << ADPS1)|(0 << ADPS0)),
+	ADC_PS_8   = ((0 << ADPS2)|(1 << ADPS1)|(1 << ADPS0)),
+	ADC_PS_16  = ((1 << ADPS2)|(0 << ADPS1)|(0 << ADPS0)),
+	ADC_PS_32  = ((1 << ADPS2)|(0 << ADPS1)|(1 << ADPS0)),
+	ADC_PS_64  = ((1 << ADPS2)|(1 << ADPS1)|(0 << ADPS0)),
+	ADC_PS_128 = ((1 << ADPS2)|(1 << ADPS1)|(1 << ADPS0))
 } adc_ps_t;
 
 /**
@@ -78,27 +78,27 @@ typedef enum {
  *   for use with the ADC.
 */
 typedef enum {
-    ADC_REF_AREF = ((0<<REFS1)|(0<<REFS0)),
-    ADC_REF_AVCC = ((0<<REFS1)|(1<<REFS0)),
-    ADC_REF_INT  = ((1<<REFS1)|(1<<REFS0))
+	ADC_REF_AREF = ((0 << REFS1)|(0 << REFS0)),
+	ADC_REF_AVCC = ((0 << REFS1)|(1 << REFS0)),
+	ADC_REF_INT  = ((1 << REFS1)|(1 << REFS0))
 } adc_ref_t;
 
 /** \brief Lists each channel's mask value for the ADC MUX. */
 typedef enum {
-    ADC_CHAN_ADC0 = ((0<<MUX4)|(0<<MUX3)|(0<<MUX2)|(0<<MUX1)|(0<<MUX0)),
-    ADC_CHAN_ADC1 = ((0<<MUX4)|(0<<MUX3)|(0<<MUX2)|(0<<MUX1)|(1<<MUX0)),
-    ADC_CHAN_ADC2 = ((0<<MUX4)|(0<<MUX3)|(0<<MUX2)|(1<<MUX1)|(0<<MUX0)),
-    ADC_CHAN_ADC3 = ((0<<MUX4)|(0<<MUX3)|(0<<MUX2)|(1<<MUX1)|(1<<MUX0)),
-    ADC_CHAN_ADC4 = ((0<<MUX4)|(0<<MUX3)|(1<<MUX2)|(0<<MUX1)|(0<<MUX0)),
-    ADC_CHAN_ADC5 = ((0<<MUX4)|(0<<MUX3)|(1<<MUX2)|(0<<MUX1)|(1<<MUX0)),
-    ADC_CHAN_ADC6 = ((0<<MUX4)|(0<<MUX3)|(1<<MUX2)|(1<<MUX1)|(0<<MUX0)),
-    ADC_CHAN_ADC7 = ((0<<MUX4)|(0<<MUX3)|(1<<MUX2)|(1<<MUX1)|(1<<MUX0))
+	ADC_CHAN_ADC0 = ((0 << MUX4)|(0 << MUX3)|(0 << MUX2)|(0 << MUX1)|(0 << MUX0)),
+	ADC_CHAN_ADC1 = ((0 << MUX4)|(0 << MUX3)|(0 << MUX2)|(0 << MUX1)|(1 << MUX0)),
+	ADC_CHAN_ADC2 = ((0 << MUX4)|(0 << MUX3)|(0 << MUX2)|(1 << MUX1)|(0 << MUX0)),
+	ADC_CHAN_ADC3 = ((0 << MUX4)|(0 << MUX3)|(0 << MUX2)|(1 << MUX1)|(1 << MUX0)),
+	ADC_CHAN_ADC4 = ((0 << MUX4)|(0 << MUX3)|(1 << MUX2)|(0 << MUX1)|(0 << MUX0)),
+	ADC_CHAN_ADC5 = ((0 << MUX4)|(0 << MUX3)|(1 << MUX2)|(0 << MUX1)|(1 << MUX0)),
+	ADC_CHAN_ADC6 = ((0 << MUX4)|(0 << MUX3)|(1 << MUX2)|(1 << MUX1)|(0 << MUX0)),
+	ADC_CHAN_ADC7 = ((0 << MUX4)|(0 << MUX3)|(1 << MUX2)|(1 << MUX1)|(1 << MUX0))
 } adc_chan_t;
 
 /** \brief Lists the two ADC adjustment values. */
 typedef enum {
-    ADC_ADJ_RIGHT = 0,
-    ADC_ADJ_LEFT = 1
+	ADC_ADJ_RIGHT = 0,
+	ADC_ADJ_LEFT = 1
 } adc_adj_t;
 
 int adc_init(adc_chan_t chan, adc_trig_t trig, adc_ref_t ref, adc_ps_t prescale);

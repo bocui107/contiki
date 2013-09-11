@@ -57,9 +57,9 @@
 
 /** \brief Circular buffer structure */
 typedef struct {
-    volatile uint8_t head;  /**< Index to last available character in buffer. */
-    volatile uint8_t tail;  /**< Index to first available character in buffer. */
-    uint8_t buf[BUFSIZE];   /**< The actual buffer used for storing characters. */
+	volatile uint8_t head;  /**< Index to last available character in buffer. */
+	volatile uint8_t tail;  /**< Index to first available character in buffer. */
+	uint8_t buf[BUFSIZE];   /**< The actual buffer used for storing characters. */
 } tcirc_buf;
 
 extern tcirc_buf rxbuf;

@@ -141,17 +141,17 @@ uint8_t
 void
 eeprom_init(void)
 {
-    uint8_t val;
-    if(0xFF == eeprom_read_byte(EEPROM_DEBUG_ADDR)){
-        /* Disable - Reverse logic. */
-        val = 1;
-        menu_debug_mode(&val);
-    }
-    else{
-        /* Enable - Reverse logic. */
-        val = 0;
-        menu_debug_mode(&val);
-    }
+	uint8_t val;
+
+	if(0xFF == eeprom_read_byte(EEPROM_DEBUG_ADDR)){
+		/* Disable - Reverse logic. */
+		val = 1;
+		menu_debug_mode(&val);
+	} else {
+		/* Enable - Reverse logic. */
+		val = 0;
+		menu_debug_mode(&val);
+	}
 }
 
 /*---------------------------------------------------------------------------*/

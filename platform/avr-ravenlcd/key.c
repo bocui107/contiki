@@ -56,19 +56,21 @@
 void
 key_init(void)
 {
-    /* Disable digital input buffer for joystick signal */
-    DIDR0 |= (1 << ADC1D);
+	/* Disable digital input buffer for joystick signal */
+	DIDR0 |= (1 << ADC1D);
 
-    /* Enter is input w/pullup */
-    ENTER_DDR &= ~(1<<ENTER_PIN);
-    ENTER_PUR |= (1<<ENTER_PIN);
+	/* Enter is input w/pullup */
+	ENTER_DDR &= ~(1 << ENTER_PIN);
+	ENTER_PUR |= (1 << ENTER_PIN);
 
-    /* Joystick is input wo/pullup (all though normal port function is overridden by ADC module when reading) */
-    KEY_DDR &= ~(1<<KEY_PIN);
-    KEY_PUR &= ~(1<<KEY_PIN);
+	/* Joystick is input wo/pullup (all though normal port
+	 * function is overridden by ADC module when reading)
+	 */
+	KEY_DDR &= ~(1 << KEY_PIN);
+	KEY_PUR &= ~(1 << KEY_PIN);
 
-    /* Get the ADC ready to use */
-    adc_init(ADC_CHAN_ADC1, ADC_TRIG_FREE_RUN, ADC_REF_AVCC, ADC_PS_128);
+	/* Get the ADC ready to use */
+	adc_init(ADC_CHAN_ADC1, ADC_TRIG_FREE_RUN, ADC_REF_AVCC, ADC_PS_128);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -79,8 +81,8 @@ key_init(void)
 void
 key_deinit(void)
 {
-    /* Turn off the ADC */
-    adc_deinit();
+	/* Turn off the ADC */
+	adc_deinit();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -94,13 +96,11 @@ key_deinit(void)
 uint8_t
 is_button(void)
 {
-    /* Return true if button has been pressed. */
-    if (key_task() == KEY_NO_KEY){
-        return false;
-    }
-    else{
-        return true;
-    }
+	/* Return true if button has been pressed. */
+	if (key_task() == KEY_NO_KEY)
+		return false;
+	else
+		return true;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -113,13 +113,15 @@ is_button(void)
 uint8_t
 get_button(void)
 {
-    uint8_t retval;
-    while (!is_button())
-        ;
+	uint8_t retval;
 
-    retval = button;
-    button = KEY_STATE_DONE;
-    return retval;
+	while (!is_button())
+		;
+
+	retval = button;
+	button = KEY_STATE_DONE;
+
+	return retval;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -132,29 +134,30 @@ get_button(void)
 key_state_t
 key_task(void)
 {
-    key_state_t key_state;
+	key_state_t key_state;
 
-    /* Check joystick state. Post event if any change since last */
-    key_state =  key_state_get();
-    if (key_state == KEY_STATE_NO_KEY){
-        if (button == KEY_STATE_DONE){
-            button = KEY_STATE_NO_KEY;
-        }
-        return KEY_NO_KEY;
-    }
+	/* Check joystick state. Post event if any change since last */
+	key_state =  key_state_get();
+	if (key_state == KEY_STATE_NO_KEY) {
+		if (button == KEY_STATE_DONE)
+			button = KEY_STATE_NO_KEY;
 
-    /* Key_state is button press code */
-    if (button == KEY_STATE_DONE){
-        /*
-         * Button has already been used, don't return any more presses
-         * until the button is released/re-pressed
-         */
-        return KEY_NO_KEY;
-    }
+		return KEY_NO_KEY;
+	}
 
-    /* Button has been pressed for the first time */
-    button = key_state;
-    return button;
+	/* Key_state is button press code */
+	if (button == KEY_STATE_DONE){
+		/*
+		 * Button has already been used, don't return any more presses
+		 * until the button is released/re-pressed
+		 */
+		return KEY_NO_KEY;
+	}
+
+	/* Button has been pressed for the first time */
+	button = key_state;
+
+	return button;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -169,36 +172,36 @@ key_task(void)
  *   \retval KEY_LEFT Left Button has been pressed.
  *   \retval KEY_DOWN Down Button has been pressed.
  *   \retval KEY_NO_KEY No Button has been pressed.
-*/
+ */
 key_state_t
 key_state_get(void)
 {
-    int16_t reading;
+	int16_t reading;
 
-    /* Start the A/D conversion */
-    adc_conversion_start();
+	/* Start the A/D conversion */
+	adc_conversion_start();
 
-    /* Wait for conversion to finish */
-    while ((reading = adc_result_get(ADC_ADJ_RIGHT)) == EOF )
-        ;
+	/* Wait for conversion to finish */
+	while ((reading = adc_result_get(ADC_ADJ_RIGHT)) == EOF )
+		;
 
-    /* Determine which button (if any) is being pressed */
-    if (!(ENTER_PORT & (1<<ENTER_PIN))){
-        return KEY_ENTER;
-    }
-    if (reading < 0x00A0){
-        return KEY_UP;
-    }
-    if (reading < 0x0180){
-        return KEY_RIGHT;
-    }
-    if (reading < 0x0280){
-        return KEY_LEFT;
-    }
-    if (reading < 0x0380){
-        return KEY_DOWN;
-    }
-    return KEY_NO_KEY;
+	/* Determine which button (if any) is being pressed */
+	if (!(ENTER_PORT & (1 << ENTER_PIN)))
+		return KEY_ENTER;
+
+	if (reading < 0x00A0)
+		return KEY_UP;
+
+	if (reading < 0x0180)
+		return KEY_RIGHT;
+
+	if (reading < 0x0280)
+		return KEY_LEFT;
+
+	if (reading < 0x0380)
+		return KEY_DOWN;
+
+	return KEY_NO_KEY;
 }
 
 /** \}   */

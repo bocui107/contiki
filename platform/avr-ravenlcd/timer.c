@@ -61,14 +61,14 @@ bool timer_flag;
 void
 timer_init(void)
 {
-    /*
-     * Set TIMER1 output compare mode to clear on compare match for OC1A. Also
-     * set the pre-scaler to 1024.
-     */
-    TCCR1B = (1 << WGM12)|(1 << CS12)|(1 << CS10);
+	/*
+	 * Set TIMER1 output compare mode to clear on compare match for OC1A. Also
+	 * set the pre-scaler to 1024.
+	 */
+	TCCR1B = (1 << WGM12)|(1 << CS12)|(1 << CS10);
 
-    /* Set TIMER1 output compare register approx. 1 sec resolution. */
-    OCR1A = _1_SEC;
+	/* Set TIMER1 output compare register approx. 1 sec resolution. */
+	OCR1A = _1_SEC;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -79,11 +79,11 @@ timer_init(void)
 void
 timer_start(void)
 {
-    /* Clear TIMER1 timer counter value. */
-    TCNT1 = 0;
+	/* Clear TIMER1 timer counter value. */
+	TCNT1 = 0;
 
-    /* Enable TIMER1 output compare interrupt. */
-    TIMSK1 = (1 << OCIE1A);
+	/* Enable TIMER1 output compare interrupt. */
+	TIMSK1 = (1 << OCIE1A);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -94,8 +94,8 @@ timer_start(void)
 void
 timer_stop(void)
 {
-    /* Disable TIMER1 output compare interrupt. */
-    TIMSK1 &= ~(1 << OCIE1A);
+	/* Disable TIMER1 output compare interrupt. */
+	TIMSK1 &= ~(1 << OCIE1A);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -106,8 +106,8 @@ timer_stop(void)
 ISR
 (TIMER1_COMPA_vect)
 {
-    /* Set the irq flag. */
-    timer_flag = true;
+	/* Set the irq flag. */
+	timer_flag = true;
 }
 
 /** \}   */

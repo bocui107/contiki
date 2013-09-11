@@ -156,16 +156,16 @@
 #include <avr/fuse.h>
 FUSES =
 	{
-		.low = 0xe2,
-		.high = 0x99,
-		.extended = 0xff,
+		.low		= 0xe2,
+		.high		= 0x99,
+		.extended	= 0xff,
 	};
 
 
 /** \ingroup lcdraven
-    \defgroup lcd LCD Functions and data
+ *  \defgroup lcd LCD Functions and data
  *  \{
-*/
+ */
 
 #if defined( DOXYGEN )
 const char menu_text0[];
@@ -217,83 +217,99 @@ const char menu_text17[] PROGMEM = "DOZE";
  *   follows the struct description of tmenu_item.
  *
  *   { text, left, right, up, down, *state, tmenufunc enter_func}
-*/
+ */
 const PROGMEM tmenu_item menu_items[18]  = {
-    {menu_text0,   0,  2,  0,  0, 0,                       0                  },
-    {menu_text1,   0,  2,  0,  0, 0,                       0                  },
-    {menu_text2,   0,  3, 17,  4, 0,                       menu_ping_request  },
-    {menu_text3,   2,  2,  2,  2, 0,                       0                  },
-    {menu_text4,   0,  5,  2, 11, 0,                       0                  },
-    {menu_text5,   4,  6,  8,  8, 0,                       0                  },
-    {menu_text6,   5,  5,  7,  7, (uint8_t*)1,             menu_read_temp     },
-    {menu_text7,   5,  5,  6,  6, (uint8_t*)0,             menu_read_temp     },
-    {menu_text8,   4,  9,  5,  5, 0,                       0                  },
-    {menu_text9,   8, 14, 10, 10, (uint8_t*)0,             menu_prepare_temp  },
-    {menu_text10,  8, 15,  9,  9, (uint8_t*)1,             menu_prepare_temp  },
-    {menu_text11,  0, 12,  4, 16, 0,                       0                  },
-    {menu_text12, 11, 11, 13, 13, (uint8_t*)1,             menu_debug_mode    },
-    {menu_text13, 11, 11, 12, 12, (uint8_t*)0,             menu_debug_mode    },
-    {menu_text14, 9,  14, 14, 14, 0,                       0                  },
-    {menu_text15, 10, 15, 15, 15, 0,                       0                  },
- //   {menu_text16,  0, 16, 11, 17, (uint8_t*)&menu_text16,  menu_run_sleep     },
- //   {menu_text17,  0, 17, 16,  2, (uint8_t*)&menu_text17,  menu_run_doze      },
-    {menu_text16,  0, 16, 11, 17, (uint8_t*)1,  menu_run_sleep     },//display "sleep" on wake
-    {menu_text17,  0, 17, 16,  2, (uint8_t*)1,  menu_run_doze      },//display "doze" on wake
+	{menu_text0,   0,  2,  0,  0, 0,		0                  },
+	{menu_text1,   0,  2,  0,  0, 0,		0                  },
+	{menu_text2,   0,  3, 17,  4, 0,		menu_ping_request  },
+	{menu_text3,   2,  2,  2,  2, 0,		0                  },
+	{menu_text4,   0,  5,  2, 11, 0,		0                  },
+	{menu_text5,   4,  6,  8,  8, 0,		0                  },
+	{menu_text6,   5,  5,  7,  7, (uint8_t*)1,	menu_read_temp     },
+	{menu_text7,   5,  5,  6,  6, (uint8_t*)0,	menu_read_temp     },
+	{menu_text8,   4,  9,  5,  5, 0,		0                  },
+	{menu_text9,   8, 14, 10, 10, (uint8_t*)0,	menu_prepare_temp  },
+	{menu_text10,  8, 15,  9,  9, (uint8_t*)1,	menu_prepare_temp  },
+	{menu_text11,  0, 12,  4, 16, 0,		0                  },
+	{menu_text12, 11, 11, 13, 13, (uint8_t*)1,	menu_debug_mode    },
+	{menu_text13, 11, 11, 12, 12, (uint8_t*)0,	menu_debug_mode    },
+	{menu_text14, 9,  14, 14, 14, 0,		0                  },
+	{menu_text15, 10, 15, 15, 15, 0,		0                  },
+	//   {menu_text16,  0, 16, 11, 17, (uint8_t*)&menu_text16,  menu_run_sleep     },
+	//   {menu_text17,  0, 17, 16,  2, (uint8_t*)&menu_text17,  menu_run_doze      },
+	{menu_text16,  0, 16, 11, 17, (uint8_t*)1,	menu_run_sleep     },//display "sleep" on wake
+	{menu_text17,  0, 17, 16,  2, (uint8_t*)1,	menu_run_doze      },//display "doze" on wake
 };
 #endif /* !DOXYGEN */
 
-key_state_t button=KEY_STATE_NO_KEY;
+key_state_t button = KEY_STATE_NO_KEY;
 tmenu_item menu;
 uint8_t count;
 uint8_t timeout_count;
-
-/*---------------------------------------------------------------------------*/
 
 /**
  *   \brief This will read the menu_items[] from the index requested.
  *
  *   \param ndx Position index of menu_items[] lookup.
-*/
+ */
 void
 read_menu(uint8_t ndx)
 {
-    /* Reads menu structure from Flash area */
-    uint8_t i;
-    uint8_t *src = (uint8_t*)&menu_items[ndx];
-    uint8_t *dest = (uint8_t*)&menu;
+	/* Reads menu structure from Flash area */
+	uint8_t i;
+	uint8_t *src = (uint8_t*)&menu_items[ndx];
+	uint8_t *dest = (uint8_t*)&menu;
 
-    for (i=0;i<sizeof(tmenu_item);i++){
-        *dest++ = pgm_read_byte(src+i);
-    }
+	for (i = 0; i < sizeof(tmenu_item); i++)
+		*dest++ = pgm_read_byte(src+i);
 }
 
-/*---------------------------------------------------------------------------*/
+/**
+ * #define   pgm_read_byte(address_short)        pgm_read_byte_near(address_short)
+ * #define   pgm_read_byte_near(address_short)   __LPM((uint16_t)(address_short))
+ * #define   __LPM(addr)                         __LPM_enhanced__(addr)
+ * #define __LPM_enhanced__(addr)  \
+ * (__extension__({                \
+ *    uint16_t __addr16 = (uint16_t)(addr); \
+ *    uint8_t __result;           \
+ *    __asm__                     \
+ *    (                           \
+ *        "lpm %0, Z" "\n\t"      \
+ *        : "=r" (__result)       \
+ *        : "z" (__addr16)        \
+ *    );                          \
+ *    __result;                   \
+ * }))
+ */
+
 char top_menu_text[20];
+
 /**
  *   \brief This will toggle the CONTIKI and 6LOWPAN LCD menus in the main
  *   menu position, unless alternate text has been sent from the 1284p.
  *   The other menus will display normally.
-*/
+ */
 void
 check_main_menu(void)
 {
-uint8_t showtop=0;
+	uint8_t showtop = 0;
 
-    if(menu.text == menu_text0){
-        read_menu(1);
-        showtop=1;
-    }
-    else if(menu.text == menu_text1){
-        read_menu(0);
-        showtop=1;
-    }
-    if (showtop) {
-        if (top_menu_text[0]) {
-            lcd_puts(top_menu_text);
-            return;
-        }
-    }
-    lcd_puts_P(menu.text);
+	if(menu.text == menu_text0){
+		read_menu(1);
+		showtop = 1;
+	} else if(menu.text == menu_text1){
+		read_menu(0);
+		showtop = 1;
+	}
+
+	if (showtop) {
+		if (top_menu_text[0]) {
+			    lcd_puts(top_menu_text);
+			    return;
+		}
+	}
+
+	lcd_puts_P(menu.text);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -302,147 +318,148 @@ uint8_t showtop=0;
  *   \brief This will check for the temp menu screen to determine if we need to
  *   clear the 4 digit LCD segments or stop an auto temp send. Also check for
  *   stopping a ping request.
-*/
+ */
 void
 check_menu(void)
 {
-    if(menu.text == menu_text12){
-       menu_clear_temp();
-    }
+	if(menu.text == menu_text12)
+		menu_clear_temp();
 
-    if(menu.text == menu_text10){
-        menu_stop_temp();
-    }
+	if(menu.text == menu_text10)
+		menu_stop_temp();
 
-    if(menu.text == menu_text2){
-        menu_stop_ping();
-        lcd_num_clr();
-    }
+	if(menu.text == menu_text2){
+		menu_stop_ping();
+		lcd_num_clr();
+	}
 }
 
 /*---------------------------------------------------------------------------*/
 
 /**
  *   \brief This is main...
-*/
+ */
 int
 main(void)
 {
-    lcd_init();
+	lcd_init();
 
-    key_init();
+	key_init();
 
-    uart_init();
+	uart_init();
 
-    eeprom_init();
+	eeprom_init();
 
-    temp_init();
+	temp_init();
 
-    timer_init();
+	timer_init();
 
-    sei();
+	sei();
 
-    lcd_symbol_set(LCD_SYMBOL_RAVEN);
-    lcd_symbol_set(LCD_SYMBOL_IP);
+	lcd_symbol_set(LCD_SYMBOL_RAVEN);
+	lcd_symbol_set(LCD_SYMBOL_IP);
 
-    /* Start with main menu */
-    read_menu(0);
-    /* and draw it */
-    lcd_puts_P(menu.text);
+	/* Start with main menu */
+	read_menu(0);
+	/* and draw it */
+	lcd_puts_P(menu.text);
 
-    timer_start();
+	timer_start();
 
-    for (;;){
-        /* Make sure interrupts are always on */
-        sei();
+	for (;;) {
+		/* Make sure interrupts are always on */
+		sei();
 
-        /* The one second timer has fired. */
-        if(timer_flag){
-            timer_flag = false;
-            /* Check if main menu needs toggled. */
-            check_main_menu();
-            /* Update LCD with temp data. */
-            if(temp_flag){
-                menu_display_temp();
-            }
-            /* Auto send temp data to 1284p. */
-            if(auto_temp){
-                menu_send_temp();
-            }
-            /* If ping mode, send 4 ping requests and then stop. */
-            if(ping_mode){
-                if((PING_ATTEMPTS == count) && !timeout_flag){
-                    count = 0;
-                    timeout_count = 0;
-                    menu_stop_ping();
-                }
-                else if(timeout_flag){
-                    timeout_flag = false;
-                    timeout_count++;
-                    /* Display timeout message if all PING_ATTEMPTS were not successful. */
-                    if(PING_ATTEMPTS == timeout_count){
-                        lcd_puts_P(PSTR("PINGS FAILED"));
-                    }
-                }
-                else{
-                    count = menu_send_ping();
-                }
-            }
-        }
+		/* The one second timer has fired. */
+		if(timer_flag) {
+			timer_flag = false;
 
-        /* Check for button press and deal with it */
-        if (is_button()){
-            /* Dispatch the button pressed */
-            switch (get_button()){
-                case KEY_UP:
-                    read_menu(menu.up);
-                    lcd_puts_P(menu.text);
-                    break;
-                case KEY_DOWN:
-                    read_menu(menu.down);
-                    lcd_puts_P(menu.text);
-                    break;
-                case KEY_LEFT:
-                    read_menu(menu.left);
-                    lcd_puts_P(menu.text);
-                    break;
-                case KEY_RIGHT:
-                    /*
-                     * Check to see if we should show another menu or
-                     * run a function
-                     */
-                    if (!menu.enter_func){
-                        /* Just another menu to display */
-                        read_menu(menu.right);
-                        lcd_puts_P(menu.text);
-                        break;
-                    }
-                    /* Drop through here */
-                case KEY_ENTER:
-                    /* Call the menu function on right or enter buttons */
-                    if (menu.enter_func){
-                        menu.enter_func(menu.state);
-                        if (menu.state){
-                            /*
-                             * We just called a selection menu (not a test),
-                             * so re-display the text for this menu level
-                             */
-                            lcd_puts_P(menu.text);
-                        }
-                        /* After enter key, check the right button menu and display. */
-                        read_menu(menu.right);
-                        lcd_puts_P(menu.text);
-                    }
-                    break;
-                default:
-                    break;
-            }
-            /* After button press, check for menus... */
-            check_menu();
-        }
-        /* Process any progress frames */
-        uart_serial_rcv_frame(false);
-    } /* end for(). */
+			/* Check if main menu needs toggled. */
+			check_main_menu();
+
+			/* Update LCD with temp data. */
+			if(temp_flag)
+				menu_display_temp();
+
+			/* Auto send temp data to 1284p. */
+			if(auto_temp)
+				menu_send_temp();
+
+			/* If ping mode, send 4 ping requests and then stop. */
+			if(ping_mode){
+				if((PING_ATTEMPTS == count) && !timeout_flag) {
+					count = 0;
+					timeout_count = 0;
+					menu_stop_ping();
+				} else if(timeout_flag) {
+					timeout_flag = false;
+					timeout_count++;
+					/*
+					 * Display timeout message if all PING_ATTEMPTS
+					 * were not successful.
+					 */
+					if(PING_ATTEMPTS == timeout_count)
+						lcd_puts_P(PSTR("PINGS FAILED"));
+				} else {
+					count = menu_send_ping();
+				}
+			}
+		}
+
+		/* Check for button press and deal with it */
+		if (is_button()){
+			/* Dispatch the button pressed */
+			switch (get_button()) {
+			case KEY_UP:
+				read_menu(menu.up);
+				lcd_puts_P(menu.text);
+				break;
+			case KEY_DOWN:
+				read_menu(menu.down);
+				lcd_puts_P(menu.text);
+				break;
+			case KEY_LEFT:
+				read_menu(menu.left);
+				lcd_puts_P(menu.text);
+				break;
+			case KEY_RIGHT:
+				/*
+				 * Check to see if we should show another menu or
+				 * run a function
+				 */
+				if (!menu.enter_func){
+					/* Just another menu to display */
+					read_menu(menu.right);
+					lcd_puts_P(menu.text);
+					break;
+				}
+			/* Drop through here */
+			case KEY_ENTER:
+				/* Call the menu function on right or enter buttons */
+				if (menu.enter_func){
+					menu.enter_func(menu.state);
+					if (menu.state){
+						/*
+						* We just called a selection menu (not a test),
+						* so re-display the text for this menu level
+						*/
+						lcd_puts_P(menu.text);
+					}
+					/* After enter key, check the right button menu and display. */
+					read_menu(menu.right);
+					lcd_puts_P(menu.text);
+				}
+				break;
+			default:
+				break;
+			}
+
+		/* After button press, check for menus... */
+		check_menu();
+		}
+	/* Process any progress frames */
+	uart_serial_rcv_frame(false);
+	} /* end for(). */
 } /* end main(). */
 
 /** \} */

@@ -112,28 +112,28 @@ static int find_temp(int16_t value, uint16_t* array, int count);
 int
 temp_init(void)
 {
-    /* Disable the Digital IO for the analog readings. */
-    DIDR0 |= (1 << ADC4D);
+	/* Disable the Digital IO for the analog readings. */
+	DIDR0 |= (1 << ADC4D);
 
-    /* Temp sens power pin as output */
-    TEMP_DDR |= (1 << TEMP_BIT_PWR);
+	/* Temp sens power pin as output */
+	TEMP_DDR |= (1 << TEMP_BIT_PWR);
 
-    /* Power off temp sensor */
-    TEMP_PORT &= ~(1 << TEMP_BIT_PWR);
+	/* Power off temp sensor */
+	TEMP_PORT &= ~(1 << TEMP_BIT_PWR);
 
-    /* Temp sens input, no pullup */
-    TEMP_DDR &= ~(1 << TEMP_BIT_IN);
-    TEMP_PORT &= ~(1 << TEMP_BIT_IN);
+	/* Temp sens input, no pullup */
+	TEMP_DDR &= ~(1 << TEMP_BIT_IN);
+	TEMP_PORT &= ~(1 << TEMP_BIT_IN);
 
 #if MEASURE_ADC2
-    DIDR0 |= (1 << ADC2D);
-    TEMP_DDR &= ~(1 << 2);
-    TEMP_PORT &= ~(1 << 2);
+	DIDR0 |= (1 << ADC2D);
+	TEMP_DDR &= ~(1 << 2);
+	TEMP_PORT &= ~(1 << 2);
 #endif   
 
-    temp_initialized = true;
+	temp_initialized = true;
 
-    return 0;
+	return 0;
 }
 
 /*---------------------------------------------------------------------------*/
