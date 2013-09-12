@@ -40,13 +40,6 @@
  *         David Kopf <dak664@embarqmail.com>
  */
 
-#define DEBUG 0
-#if DEBUG
-#define PRINTD(FORMAT,args...) printf_P(PSTR(FORMAT),##args)
-#else
-#define PRINTD(...)
-#endif
-
 #include <avr/pgmspace.h>
 #include <avr/fuse.h>
 #include <avr/eeprom.h>
@@ -108,19 +101,6 @@ rimeaddr_t macLongAddr;
 #include "ieee-15-4-manager.h"
 #endif /* RF230BB */
 
-/* Test rtimers, also useful for pings, time stamps, routes, stack monitor */
-#define TESTRTIMER 0
-#if TESTRTIMER
-#define PINGS 0
-#define STAMPS 60
-#define ROUTES 120
-#define STACKMONITOR  600
-uint8_t rtimerflag=1;
-uint16_t rtime;
-struct rtimer rt;
-void rtimercycle(void) {rtimerflag=1;}
-#endif /* TESTRTIMER */
-
 #if UIP_CONF_IPV6_RPL
 /*---------------------------------------------------------------------------*/
 /*---------------------------------  RPL   ----------------------------------*/
@@ -135,13 +115,8 @@ void mac_LowpanToEthernet(void);
 static void
 output(void)
 {
-//  if(uip_ipaddr_cmp(&last_sender, &UIP_IP_BUF->srcipaddr)) {
-    /* Do not bounce packets back over USB if the packet was received from USB */
-//    PRINTA("JACKDAW router: Destination off-link but no route\n");
- // } else {
     PRINTD("SUT: %u\n", uip_len);
     mac_LowpanToEthernet();  //bounceback trap is done in lowpanToEthernet
-//  }
 }
 const struct uip_fallback_interface rpl_interface = {
   init, output
@@ -185,14 +160,9 @@ PROCESS_THREAD(border_router_process, ev, data)
 #endif
   }
 }
-  /* The border router runs with a 100% duty cycle in order to ensure high
-     packet reception rates. */
- // NETSTACK_MAC.off(1);
 
   while(1) {
     PROCESS_YIELD();
-    /* Local and global dag repair can be done from the jackdaw menu */
-
   }
 
   PROCESS_END();
@@ -203,19 +173,8 @@ PROCESS_THREAD(border_router_process, ev, data)
 
 /*-------------------------------------------------------------------------*/
 /*----------------------Configuration of the .elf file---------------------*/
-#if 1
 /* The proper way to set the signature is */
 #include <avr/signature.h>
-#else
-/* Older avr-gcc's may not define the needed SIGNATURE bytes. Do it manually if you get an error */
-typedef struct {const unsigned char B2;const unsigned char B1;const unsigned char B0;} __signature_t;
-#define SIGNATURE __signature_t __signature __attribute__((section (".signature")))
-SIGNATURE = {
-  .B2 = 0x82,//SIGNATURE_2, //AT90USB128x
-  .B1 = 0x97,//SIGNATURE_1, //128KB flash
-  .B0 = 0x1E,//SIGNATURE_0, //Atmel
-};
-#endif
 
 FUSES ={.low = 0xde, .high = 0x99, .extended = 0xff,};
 
@@ -391,87 +350,90 @@ static uint8_t get_txpower_from_eeprom(void) {
 /*-------------------------------------------------------------------------*/
 /*-----------------------------Low level initialization--------------------*/
 static void initialize(void) {
-
-  watchdog_init();
-  watchdog_start();
+	watchdog_init();
+	watchdog_start();
 
 #if CONFIG_STACK_MONITOR
-  /* Simple stack pointer highwater monitor. The 'm' command in cdc_task.c
-   * looks for the first overwritten magic number.
-   */
-{
-extern uint16_t __bss_end;
-uint16_t p=(uint16_t)&__bss_end;
-    do {
-      *(uint16_t *)p = 0x4242;
-      p+=100;
-    } while (p<SP-100); //don't overwrite our own stack
-}
+	{
+		/* Simple stack pointer highwater monitor. The 'm' command in cdc_task.c
+		 * looks for the first overwritten magic number.
+		 */
+		extern uint16_t __bss_end;
+		uint16_t p = (uint16_t)&__bss_end;
+
+		do {
+			*(uint16_t *)p = 0x4242;
+			p += 100;
+		} while (p < SP - 100); //don't overwrite our own stack
+	}
 #endif
 
-  /* Initialize hardware */
-  // Checks for "finger", jumps to DFU if present.
-  init_lowlevel();
-  
-  /* Clock */
-  clock_init();
+	/* Initialize hardware */
+	// Checks for "finger", jumps to DFU if present.
+	init_lowlevel();
 
-  /* Leds are referred to by number to prevent any possible confusion :) */
-  /* Led0 Blue Led1 Red Led2 Green Led3 Yellow */
-  Leds_init();
-  Led1_on();
+	/* Clock */
+	clock_init();
 
-/* Get a random (or probably different) seed for the 802.15.4 packet sequence number.
- * Some layers will ignore duplicates found in a history (e.g. Contikimac)
- * causing the initial packets to be ignored after a short-cycle restart.
- */
-  ADMUX =0x1E;              //Select AREF as reference, measure 1.1 volt bandgap reference.
-  ADCSRA=1<<ADEN;           //Enable ADC, not free running, interrupt disabled, fastest clock
-  ADCSRA|=1<<ADSC;          //Start conversion
-  while (ADCSRA&(1<<ADSC)); //Wait till done
-  PRINTD("ADC=%d\n",ADC);
-  random_init(ADC);
-  ADCSRA=0;                 //Disable ADC
-  
+	/* Leds are referred to by number to prevent any possible confusion :) */
+	/* Led0 Blue Led1 Red Led2 Green Led3 Yellow */
+	Leds_init();
+	Led1_on();
+
+	/* Get a random (or probably different) seed for the 802.15.4 packet sequence number.
+	 * Some layers will ignore duplicates found in a history (e.g. Contikimac)
+	 * causing the initial packets to be ignored after a short-cycle restart.
+	 */
+	ADMUX = 0x1E;              //Select AREF as reference, measure 1.1 volt bandgap reference.
+	ADCSRA = 1 << ADEN;           //Enable ADC, not free running, interrupt disabled, fastest clock
+	ADCSRA |= 1 << ADSC;          //Start conversion
+	while (ADCSRA & (1 << ADSC)); //Wait till done
+	PRINTD("ADC=%d\n",ADC);
+	random_init(ADC);
+	ADCSRA=0;                 //Disable ADC
+
 #if USB_CONF_RS232
-  /* Use rs232 port for serial out (tx, rx, gnd are the three pads behind jackdaw leds */
-  rs232_init(RS232_PORT_0, USART_BAUD_57600,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
-  /* Redirect stdout to second port */
-  rs232_redirect_stdout(RS232_PORT_0);
+	/* Use rs232 port for serial out (tx, rx, gnd are the three pads behind jackdaw leds */
+	rs232_init(RS232_PORT_0, USART_BAUD_57600,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
+	/* Redirect stdout to second port */
+	rs232_redirect_stdout(RS232_PORT_0);
 #if ANNOUNCE
-  PRINTA("\n\n*******Booting %s*******\n",CONTIKI_VERSION_STRING);
+	PRINTA("\n\n*******Booting %s*******\n",CONTIKI_VERSION_STRING);
 #endif
 #endif
-	
-  /* rtimer init needed for low power protocols */
-  rtimer_init();
 
-  /* Process subsystem. */
-  process_init();
+	/* rtimer init needed for low power protocols */
+	rtimer_init();
 
-  /* etimer process must be started before USB or ctimer init */
-  process_start(&etimer_process, NULL);
+	/* Process subsystem. */
+	process_init();
 
-  Led2_on();
-  /* Now we can start USB enumeration */
-  process_start(&usb_process, NULL);
+	/* etimer process must be started before USB or ctimer init */
+	process_start(&etimer_process, NULL);
+
+	Led2_on();
+	/* Now we can start USB enumeration */
+	process_start(&usb_process, NULL);
 
   /* Start CDC enumeration, bearing in mind that it may fail */
   /* Hopefully we'll get a stdout for startup messages, if we don't already */
 #if USB_CONF_SERIAL
-  process_start(&cdc_process, NULL);
-{unsigned short i;
-  for (i=0;i<65535;i++) {
-    process_run();
-    watchdog_periodic();
-    if (stdout) break;
-  }
+	process_start(&cdc_process, NULL);
+	{
+		unsigned short i;
+
+		for (i = 0;i < 65535; i++) {
+			process_run();
+			watchdog_periodic();
+			if (stdout) break;
+		}
 #if !USB_CONF_RS232
-  PRINTA("\n\n*******Booting %s*******\n",CONTIKI_VERSION_STRING);
+		PRINTA("\n\n*******Booting %s*******\n",CONTIKI_VERSION_STRING);
 #endif
-}
+	}
 #endif
-  if (!stdout) Led3_on();
+	if (!stdout)
+		Led3_on();
   
 #if RF230BB
 #if JACKDAW_CONF_USE_SETTINGS
@@ -486,98 +448,102 @@ uint16_t p=(uint16_t)&__bss_end;
 }
 #endif
 
-  ctimer_init();
-  /* Start radio and radio receive process */
-  /* Note this starts RF230 process, so must be done after process_init */
-  NETSTACK_RADIO.init();
+	ctimer_init();
+	/* Start radio and radio receive process */
+	/* Note this starts RF230 process, so must be done after process_init */
+	NETSTACK_RADIO.init();
 
-  /* Set addresses BEFORE starting tcpip process */
+	/* Set addresses BEFORE starting tcpip process */
 
-  memset(&tmp_addr, 0, sizeof(rimeaddr_t));
+	memset(&tmp_addr, 0, sizeof(rimeaddr_t));
 
-  if(get_eui64_from_eeprom(tmp_addr.u8));
-   
-  //Fix MAC address
-  init_net();
+	if(get_eui64_from_eeprom(tmp_addr.u8));
+
+	//Fix MAC address
+	init_net();
 
 #if UIP_CONF_IPV6
-  memcpy(&uip_lladdr.addr, &tmp_addr.u8, 8);
+	memcpy(&uip_lladdr.addr, &tmp_addr.u8, 8);
 #endif
 
-  rf230_set_pan_addr(
-	get_panid_from_eeprom(),
-	get_panaddr_from_eeprom(),
-	(uint8_t *)&tmp_addr.u8
-  );
-  
-  rf230_set_channel(get_channel_from_eeprom());
-  rf230_set_txpower(get_txpower_from_eeprom());
+	rf230_set_pan_addr(
+		get_panid_from_eeprom(),
+		get_panaddr_from_eeprom(),
+		(uint8_t *)&tmp_addr.u8
+	);
 
-  rimeaddr_set_node_addr(&tmp_addr); 
+	rf230_set_channel(get_channel_from_eeprom());
+	rf230_set_txpower(get_txpower_from_eeprom());
 
-  /* Initialize stack protocols */
-  queuebuf_init();
-  NETSTACK_RDC.init();
-  NETSTACK_MAC.init();
-  NETSTACK_NETWORK.init();
+	rimeaddr_set_node_addr(&tmp_addr); 
+
+	/* Initialize stack protocols */
+	queuebuf_init();
+	NETSTACK_RDC.init();
+	NETSTACK_MAC.init();
+	NETSTACK_NETWORK.init();
 
 #if ANNOUNCE
-  PRINTA("MAC address %x:%x:%x:%x:%x:%x:%x:%x\n\r",tmp_addr.u8[0],tmp_addr.u8[1],tmp_addr.u8[2],tmp_addr.u8[3],tmp_addr.u8[4],tmp_addr.u8[5],tmp_addr.u8[6],tmp_addr.u8[7]);
-  PRINTA("%s %s, channel %u",NETSTACK_MAC.name, NETSTACK_RDC.name,rf230_get_channel());
-  if (NETSTACK_RDC.channel_check_interval) {
-    unsigned short tmp;
-    tmp=CLOCK_SECOND / (NETSTACK_RDC.channel_check_interval == 0 ? 1:\
-                        NETSTACK_RDC.channel_check_interval());
-    if (tmp<65535) PRINTA(", check rate %u Hz",tmp);
-  }
-  PRINTA("\n");
+	PRINTA("MAC address %x:%x:%x:%x:%x:%x:%x:%x\n\r",
+				tmp_addr.u8[0],
+				tmp_addr.u8[1],
+				tmp_addr.u8[2],
+				tmp_addr.u8[3],
+				tmp_addr.u8[4],
+				tmp_addr.u8[5],
+				tmp_addr.u8[6],
+				tmp_addr.u8[7]);
+	PRINTA("%s %s, channel %u",
+				NETSTACK_MAC.name,
+				NETSTACK_RDC.name,
+				rf230_get_channel());
+	if (NETSTACK_RDC.channel_check_interval) {
+		unsigned short tmp;
+		tmp = CLOCK_SECOND / (NETSTACK_RDC.channel_check_interval == 0 ?
+				1: NETSTACK_RDC.channel_check_interval());
+		if (tmp < 65535)
+			PRINTA(", check rate %u Hz",tmp);
+	}
+	PRINTA("\n");
 #endif
 
 #if UIP_CONF_IPV6_RPL
 #if RPL_BORDER_ROUTER
-  process_start(&tcpip_process, NULL);
-  process_start(&border_router_process, NULL);
-  PRINTD ("RPL Border Router Started\n");
+	process_start(&tcpip_process, NULL);
+	process_start(&border_router_process, NULL);
+	PRINTD ("RPL Border Router Started\n");
 #else
-  process_start(&tcpip_process, NULL);
-  PRINTD ("RPL Started\n");
+	process_start(&tcpip_process, NULL);
+	PRINTD ("RPL Started\n");
 #endif
+
 #if RPL_HTTPD_SERVER
-  extern struct process httpd_process;
-  process_start(&httpd_process, NULL);
-  PRINTD ("Webserver Started\n");
+	extern struct process httpd_process;
+	process_start(&httpd_process, NULL);
+	PRINTD ("Webserver Started\n");
 #endif
 #endif /* UIP_CONF_IPV6_RPL */
 
 #else  /* RF230BB */
-/* The order of starting these is important! */
-  process_start(&mac_process, NULL);
-  process_start(&tcpip_process, NULL);
-#endif /* RF230BB */
+	/* The order of starting these is important! */
+	process_start(&mac_process, NULL);
+	process_start(&tcpip_process, NULL);
+#endif /* !RF230BB */
 
-  /* Start ethernet network and storage process */
-  process_start(&usb_eth_process, NULL);
+	/* Start ethernet network and storage process */
+	process_start(&usb_eth_process, NULL);
 #if USB_CONF_STORAGE
-  process_start(&storage_process, NULL);
-#endif
-
-  /* Autostart other processes */
-  /* There are none in the default build so autostart_processes will be unresolved in the link. */
-  /* The AUTOSTART_PROCESSES macro which defines it can only be used in the .co module. */
-  /* See /examples/ravenusbstick/ravenusb.c for an autostart template. */
-#if 0
-  autostart_start(autostart_processes);
+	process_start(&storage_process, NULL);
 #endif
 
 #if ANNOUNCE
 #if USB_CONF_RS232
-  PRINTA("Online.\n");
+	PRINTA("Online.\n");
 #else
-  PRINTA("Online. Type ? for Jackdaw menu.\n");
+	PRINTA("Online. Type ? for Jackdaw menu.\n");
 #endif
 #endif
-
-Leds_off();
+	Leds_off();
 }
 
 /*-------------------------------------------------------------------------*/
@@ -585,145 +551,27 @@ Leds_off();
 int
 main(void)
 {
-  /* GCC depends on register r1 set to 0 (?) */
-  asm volatile ("clr r1");
-  
-  /* Initialize in a subroutine to maximize stack space */
-  initialize();
+	/* GCC depends on register r1 set to 0 (?) */
+	asm volatile ("clr r1");
 
-#if DEBUG
-{struct process *p;
- for(p = PROCESS_LIST();p != NULL; p = ((struct process *)p->next)) {
-  PRINTA("Process=%p Thread=%p  Name=\"%s\" \n",p,p->thread,PROCESS_NAME_STRING(p));
- }
-}
-#endif
+	/* Initialize in a subroutine to maximize stack space */
+	initialize();
 
-  while(1) {
-    process_run();
+	while(1) {
+		process_run();
 
-    watchdog_periodic();
+		watchdog_periodic();
 
-/* Print rssi of all received packets, useful for range testing */
+	/* Print rssi of all received packets, useful for range testing */
 #ifdef RF230_MIN_RX_POWER
-    uint8_t lastprint;
-    if (rf230_last_rssi != lastprint) {        //can be set in halbb.c interrupt routine
-        PRINTA("%u ",rf230_last_rssi);
-        lastprint=rf230_last_rssi;
-    }
+	uint8_t lastprint;
+
+	if (rf230_last_rssi != lastprint) {        //can be set in halbb.c interrupt routine
+		PRINTA("%u ",rf230_last_rssi);
+		lastprint = rf230_last_rssi;
+	}
 #endif
+	}
 
-#if 0
-/* Clock.c can trigger a periodic PLL calibration in the RF230BB driver.
- * This can show when that happens.
- */
-    extern uint8_t rf230_calibrated;
-    if (rf230_calibrated) {
-      PRINTA("\nRF230 calibrated!\n");
-      rf230_calibrated=0;
-    }
-#endif
-
-#if TESTRTIMER
-/* Timeout can be increased up to 8 seconds maximum.
- * A one second cycle is convenient for triggering the various debug printouts.
- * The triggers are staggered to avoid printing everything at once.
- * My Jackdaw is 4% slow.
- */
-    if (rtimerflag) {
-      rtimer_set(&rt, RTIMER_NOW()+ RTIMER_ARCH_SECOND*1UL, 1,(void *) rtimercycle, NULL);
-      rtimerflag=0;
-
-#if STAMPS
-if ((rtime%STAMPS)==0) {
-  PRINTA("%us ",rtime);
-  if (rtime%STAMPS*10) PRINTA("\n");
-}
-#endif
-      rtime+=1;
-
-#if PINGS && UIP_CONF_IPV6_RPL
-extern void raven_ping6(void);
-if ((rtime%PINGS)==1) {
-  PRINTA("**Ping\n");
-  raven_ping6();
-}
-#endif
-
-#if ROUTES && UIP_CONF_IPV6_RPL
-if ((rtime%ROUTES)==2) {
-
-extern uip_ds6_netif_t uip_ds6_if;
-
-  uint8_t i,j;
-  uip_ds6_nbr_t *nbr;
-
-  PRINTA("\nAddresses [%u max]\n",UIP_DS6_ADDR_NB);
-  for (i=0;i<UIP_DS6_ADDR_NB;i++) {
-    if (uip_ds6_if.addr_list[i].isused) {
-      uip_debug_ipaddr_print(&uip_ds6_if.addr_list[i].ipaddr);
-      PRINTA("\n");
-    }
-  }
-  PRINTA("\nNeighbors [%u max]\n",NBR_TABLE_MAX_NEIGHBORS);
-
-  for(nbr = nbr_table_head(ds6_neighbors);
-      nbr != NULL;
-      nbr = nbr_table_next(ds6_neighbors, nbr)) {
-    uip_debug_ipaddr_print(&nbr->ipaddr);
-    PRINTA("\n");
-    j=0;
-  }
-  if (j) PRINTA("  <none>");
-  PRINTA("\nRoutes [%u max]\n",UIP_DS6_ROUTE_NB);
-  uip_ds6_route_t *r;
-  for(r = uip_ds6_route_head();
-      r != NULL;
-      r = uip_ds6_route_next(r)) {
-    if(r->isused) {
-      uip_debug_ipaddr_print(&r->ipaddr);
-      PRINTA("/%u (via ", r->length);
-      uip_debug_ipaddr_print(uip_ds6_route_nexthop(r));
- //     if(r->state.lifetime < 600) {
-        PRINTA(") %lus\n", r->state.lifetime);
- //     } else {
- //       PRINTA(")\n");
- //     }
-      j=0;
-    }
-  }
-  if (j) PRINTA("  <none>");
-  PRINTA("\n---------\n");
-}
-#endif
-
-#if STACKMONITOR && CONFIG_STACK_MONITOR
-if ((rtime%STACKMONITOR)==3) {
-  extern uint16_t __bss_end;
-  uint16_t p=(uint16_t)&__bss_end;
-  do {
-    if (*(uint16_t *)p != 0x4242) {
-      PRINTA("Never-used stack > %d bytes\n",p-(uint16_t)&__bss_end);
-      break;
-    }
-    p+=100;
-  } while (p<RAMEND-10);
-}
-#endif
-
-    }
-#endif /* TESTRTIMER */
-
-//Use with RF230BB DEBUGFLOW to show path through driver
-#if RF230BB&&0
-extern uint8_t debugflowsize,debugflow[];  //in rf230bb.c
-  if (debugflowsize) {
-    debugflow[debugflowsize]=0;
-    PRINTA("%s",debugflow);
-    debugflowsize=0;
-   }
-#endif
-
-  }
-  return 0;
+	return 0;
 }

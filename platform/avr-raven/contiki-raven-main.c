@@ -130,19 +130,8 @@ void rtimercycle(void) {rtimerflag=1;}
 
 /*-------------------------------------------------------------------------*/
 /*----------------------Configuration of the .elf file---------------------*/
-#if 1
 /* The proper way to set the signature is */
 #include <avr/signature.h>
-#else
-/* Older avr-gcc's may not define the needed SIGNATURE bytes. Do it manually if you get an error */
-typedef struct {const unsigned char B2;const unsigned char B1;const unsigned char B0;} __signature_t;
-#define SIGNATURE __signature_t __signature __attribute__((section (".signature")))
-SIGNATURE = {
-  .B2 = 0x05,//SIGNATURE_2, //ATMEGA1284p
-  .B1 = 0x97,//SIGNATURE_1, //128KB flash
-  .B0 = 0x1E,//SIGNATURE_0, //Atmel
-};
-#endif
 
 #if !MCU_CONF_LOW_WEAR
 /* JTAG, SPI enabled, Internal RC osc, Boot flash size 4K, 6CK+65msec delay, brownout disabled */
@@ -430,44 +419,22 @@ int
 main(void)
 {
 #if UIP_CONF_IPV6
-  uip_ds6_nbr_t *nbr;
+	uip_ds6_nbr_t *nbr;
 #endif /* UIP_CONF_IPV6 */
-  initialize();
 
-  while(1) {
-    process_run();
-    watchdog_periodic();
+	initialize();
 
-#if 0
-/* Various entry points for debugging in the AVR Studio simulator.
- * Set as next statement and step into the routine.
- */
-    NETSTACK_RADIO.send(packetbuf_hdrptr(), 42);
-    process_poll(&rf230_process);
-    packetbuf_clear();
-    len = rf230_read(packetbuf_dataptr(), PACKETBUF_SIZE);
-    packetbuf_set_datalen(42);
-    NETSTACK_RDC.input();
-#endif
-
-#if 0
-/* Clock.c can trigger a periodic PLL calibration in the RF230BB driver.
- * This can show when that happens.
- */
-    extern uint8_t rf230_calibrated;
-    if (rf230_calibrated) {
-      PRINTD("\nRF230 calibrated!\n");
-      rf230_calibrated=0;
-    }
-#endif
+	while(1) {
+		process_run();
+		watchdog_periodic();
 
 /* Set DEBUGFLOWSIZE in contiki-conf.h to track path through MAC, RDC, and RADIO */
 #if DEBUGFLOWSIZE
-  if (debugflowsize) {
-    debugflow[debugflowsize]=0;
-    PRINTF("%s",debugflow);
-    debugflowsize=0;
-   }
+		if (debugflowsize) {
+			debugflow[debugflowsize]=0;
+			PRINTF("%s",debugflow);
+			debugflowsize=0;
+		}
 #endif
 
 #if PERIODICPRINTS
@@ -567,24 +534,6 @@ if ((clocktime%STACKMONITOR)==3) {
 
     }
 #endif /* PERIODICPRINTS */
-
-#if RF230BB&&0
-extern uint8_t rf230processflag;
-    if (rf230processflag) {
-      PRINTF("rf230p%d",rf230processflag);
-      rf230processflag=0;
-    }
-#endif
-
-#if RF230BB&&0
-extern uint8_t rf230_interrupt_flag;
-    if (rf230_interrupt_flag) {
- //   if (rf230_interrupt_flag!=11) {
-        PRINTF("**RI%u",rf230_interrupt_flag);
- //   }
-      rf230_interrupt_flag=0;
-    }
-#endif
   }
   return 0;
 }

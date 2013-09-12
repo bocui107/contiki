@@ -103,7 +103,7 @@ static const unsigned char seg_map[] PROGMEM = {
 
 /* Look-up tables for 14-segment characters */
 static const unsigned int LCD_character_table[] PROGMEM = /* Character definitions table. */
-{    /* (AS_A|AS_B|AS_C|AS_D|AS_E|AS_F|AS_G1|AS_G2|AS_H|AS_I|AS_J|AS_K|AS_L|AS_M) */ 
+{    /* (AS_A|AS_B|AS_C|AS_D|AS_E|AS_F|AS_G1|AS_G2|AS_H|AS_I|AS_J|AS_K|AS_L|AS_M) */
 	(                                                                      0), /* ' ' */
 	(                                                                      0), /* '!' (Not defined) */
 	(                                                                      0), /* '"' (Not defined) */
