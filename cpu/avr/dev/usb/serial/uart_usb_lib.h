@@ -48,17 +48,9 @@
   @{
   */
 
-/*_____ I N C L U D E S ____________________________________________________*/
-
-
-/*_____ M A C R O S ________________________________________________________*/
-
-
 #ifdef UART_USB_DEFAULT_OUTPUT
 #define uart_usb_putchar            putchar
 #endif
-
-/*_____ D E F I N I T I O N ________________________________________________*/
 
 typedef struct
 {
@@ -67,9 +59,6 @@ typedef struct
 	U8 bParityType;
 	U8 bDataBits;
 }S_line_coding;
-
-
-/*_____ D E C L A R A T I O N ______________________________________________*/
 
 void  uart_usb_init(void);
 bit   uart_usb_tx_ready(void);
@@ -84,7 +73,4 @@ void uart_usb_set_control_line_state(uint8_t control_line_state);
 extern void uart_usb_configure_endpoints();
 
 /** @} **/
-
 #endif /* _UART_USB_LIB_H_ */
-
-

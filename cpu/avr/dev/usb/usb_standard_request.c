@@ -46,22 +46,14 @@
   POSSIBILITY OF SUCH DAMAGE.
 */
 
-//_____ I N C L U D E S ____________________________________________________
-
 #include "config.h"
 #include "usb_drv.h"
 #include "usb_descriptors.h"
 #include "usb_specific_request.h"
 #include <string.h>
 
-//_____ M A C R O S ________________________________________________________
-
-
-//_____ D E F I N I T I O N ________________________________________________
 #define PRINTF printf
 #define PRINTF_P printf_P
-
-//_____ P R I V A T E   D E C L A R A T I O N ______________________________
 
 static  void    usb_get_descriptor(   void);
 static  void    usb_set_address(      void);
@@ -73,26 +65,21 @@ static  void    usb_get_configuration(void);
 static  void    usb_get_interface (void);
 static  void    usb_set_interface (void);
 
-
-//_____ D E C L A R A T I O N ______________________________________________
-
 static  bit  zlp;
 static  U8   endpoint_status[NB_ENDPOINTS];
 
 #ifdef AVRGCC
-        PGM_VOID_P pbuffer;
+PGM_VOID_P pbuffer;
 #else
-        U8   FLASH *pbuffer;
+U8 FLASH *pbuffer;
 #endif
-        U8   data_to_transfer;
+U8 data_to_transfer;
+U16  wInterface;
 
-        U16  wInterface;
+static U8 bmRequestType;
 
-static  U8   bmRequestType;
-
-        U8   usb_configuration_nb;
-
-		usb_mode_t usb_mode = rndis_debug;
+U8 usb_configuration_nb;
+usb_mode_t usb_mode = rndis_debug;
 
 extern  bit     usb_connected;
 extern  FLASH    S_usb_device_descriptor             usb_user_device_descriptor_network;

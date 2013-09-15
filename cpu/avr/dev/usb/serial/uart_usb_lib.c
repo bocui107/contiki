@@ -40,8 +40,6 @@
   POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*_____ I N C L U D E S ____________________________________________________*/
-
 #include "config.h"
 #include "usb_drv.h"
 #include "usb_descriptors.h"
@@ -53,8 +51,6 @@
  \addtogroup cdctask
  @{
  */
-
-/*_____ M A C R O S ________________________________________________________*/
 
 #ifndef USB_CDC_ACM_HOOK_TX_START
 #define USB_CDC_ACM_HOOK_TX_START(char)
@@ -76,13 +72,9 @@
 #define USB_CDC_ACM_CONF_LOCAL_ECHO 0
 #endif
 
-/*_____ D E F I N I T I O N ________________________________________________*/
-
 Uchar tx_counter;
 Uchar rx_counter;
 S_line_coding   line_coding;
-
-/*_____ D E C L A R A T I O N ______________________________________________*/
 
 void uart_usb_configure_endpoints() {
 	usb_configure_endpoint(
@@ -153,13 +145,13 @@ static FILE usb_stdout = FDEV_SETUP_STREAM(usb_stdout_putchar,
   */
 void uart_usb_init(void)
 {
-  tx_counter = 0;
-  rx_counter = 0;
+	tx_counter = 0;
+	rx_counter = 0;
 }
 
 void uart_usb_set_stdout(void)
 {
-  stdout = &usb_stdout;
+	stdout = &usb_stdout;
 }
 
 
@@ -186,12 +178,11 @@ void uart_usb_set_control_line_state(uint8_t control_line_state)
   */
 bit uart_usb_tx_ready(void)
 {
-  Usb_select_endpoint(VCP_TX_EP);
-  if (!Is_usb_write_enabled())
-  {
-    return FALSE;
-  }
-  return TRUE;
+	Usb_select_endpoint(VCP_TX_EP);
+	if (!Is_usb_write_enabled())
+		return FALSE;
+
+	return TRUE;
 }
 
 /**
@@ -269,26 +260,30 @@ bit uart_usb_test_hit(void)
   */
 char uart_usb_getchar(void)
 {
-  register Uchar data_rx;
+	register Uchar data_rx;
 
-  // Preserve the currently selected endpoint
-  uint8_t uenum = UENUM;
-  
-  Usb_select_endpoint(VCP_RX_EP);
-  if (!rx_counter) while (!uart_usb_test_hit());
-  data_rx=Usb_read_byte();
-  rx_counter--;
-  if (!rx_counter) Usb_ack_receive_out();
-  
+	// Preserve the currently selected endpoint
+	uint8_t uenum = UENUM;
+
+	Usb_select_endpoint(VCP_RX_EP);
+	if (!rx_counter)
+		while (!uart_usb_test_hit());
+
+	data_rx = Usb_read_byte();
+	rx_counter--;
+
+	if (!rx_counter)
+		Usb_ack_receive_out();
+
 #if USB_CDC_ACM_CONF_LOCAL_ECHO
-  //Local echo
-  uart_usb_putchar(data_rx);
+	//Local echo
+	uart_usb_putchar(data_rx);
 #endif
-  
-  // Restore previously selected endpoint
-  UENUM = uenum;
 
-  return data_rx;
+	// Restore previously selected endpoint
+	UENUM = uenum;
+
+	return data_rx;
 }
 
 
