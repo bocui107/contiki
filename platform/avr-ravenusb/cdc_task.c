@@ -82,19 +82,10 @@
 #define PRINTF printf
 #define PRINTF_P printf_P
 
-//_____ M A C R O S ________________________________________________________
-
-
 #define bzero(ptr,size)	memset(ptr,0,size)
-
-//_____ D E F I N I T I O N S ______________________________________________
-
 
 #define IAD_TIMEOUT_DETACH 300
 #define IAD_TIMEOUT_ATTACH 600
-
-//_____ D E C L A R A T I O N S ____________________________________________
-
 
 void menu_print(void);
 void menu_process(char c);
@@ -102,31 +93,45 @@ void menu_process(char c);
 extern char usb_busy;
 
 //! Counter for USB Serial port
-extern U8    tx_counter;
+extern U8 tx_counter;
 
 //! Timers for LEDs
 uint8_t led3_timer;
 
-
 //! previous configuration
 static uint8_t previous_uart_usb_control_line_state = 0;
-
 
 static uint8_t timer = 0;
 static struct etimer et;
 
 #define CONVERTTXPOWER 1
 #if CONVERTTXPOWER  //adds ~120 bytes to program flash size
-const char txonesdigit[16]   PROGMEM = {'3','2','2','1','1','0','0','1','2','3','4','5','7','9','2','7'};
-const char txtenthsdigit[16] PROGMEM = {'0','6','1','6','1','5','2','2','2','2','2','2','2','2','2','2'};
+const char txonesdigit[16] PROGMEM = {
+	'3','2','2','1',
+	'1','0','0','1',
+	'2','3','4','5',
+	'7','9','2','7'
+	};
+
+const char txtenthsdigit[16] PROGMEM = {
+	'0','6','1','6',
+	'1','5','2','2',
+	'2','2','2','2',
+	'2','2','2','2'
+	};
+
 static void printtxpower(void) {
-    uint8_t power=rf230_get_txpower()&0xf;
-    char sign=(power<6?'+':'-');
-    char tens=(power>14?'1':'0');
-    char ones=pgm_read_byte(&txonesdigit[power]);
-    char tenths=pgm_read_byte(&txtenthsdigit[power]);
-    if (tens=='0') {tens=sign;sign=' ';}
-    PRINTF_P(PSTR("%c%c%c.%cdBm"),sign,tens,ones,tenths);
+	uint8_t power = rf230_get_txpower() & 0xf;
+	char sign=(power < 6 ? '+' : '-');
+	char tens=(power > 14 ? '1' : '0');
+	char ones = pgm_read_byte(&txonesdigit[power]);
+	char tenths = pgm_read_byte(&txtenthsdigit[power]);
+	if (tens=='0') {
+		tens=sign;
+		sign=' ';
+	}
+
+	PRINTF_P(PSTR("%c%c%c.%cdBm"),sign,tens,ones,tenths);
 }
 #endif
 
@@ -216,7 +221,6 @@ void menu_print(void)
 {
 		PRINTF_P(PSTR("\n\r*********** Jackdaw Menu **********\n\r"));
 		PRINTF_P(PSTR("        [Built "__DATE__"]      \n\r"));
-//		PRINTF_P(PSTR("*                                 *\n\r"));
 		PRINTF_P(PSTR("*  m        Print current mode    *\n\r"));
 		PRINTF_P(PSTR("*  s        Set to sniffer mode   *\n\r"));
 		PRINTF_P(PSTR("*  n        Set to network mode   *\n\r"));
@@ -381,13 +385,17 @@ void menu_process(char c)
 					} else {
 #endif
 #if JACKDAW_CONF_USE_SETTINGS
-						if(settings_set_uint8(SETTINGS_KEY_TXPOWER, tempchannel)==SETTINGS_STATUS_OK) {
-							PRINTF_P(PSTR("\n\rTransmit power changed to %d, and stored in EEPROM.\n\r"),tempchannel);
+						if(settings_set_uint8(SETTINGS_KEY_TXPOWER, tempchannel) ==
+							SETTINGS_STATUS_OK) {
+							PRINTF_P(PSTR("\n\rTransmit power changed to %d,
+								 and stored in EEPROM.\n\r"),tempchannel);
 						} else {
-							PRINTF_P(PSTR("\n\rTransmit power changed to %d, but unable to store in EEPROM!\n\r"),tempchannel);
+							PRINTF_P(PSTR("\n\rTransmit power changed to %d, but
+							      unable to store in EEPROM!\n\r"),tempchannel);
 						}
 #else
-						PRINTF_P(PSTR("\n\rTransmit power changed to %d.\n\r"),tempchannel);
+						PRINTF_P(PSTR("\n\rTransmit power changed to %d.\n\r"),
+										tempchannel);
 #endif
 					}
 				} else {

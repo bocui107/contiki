@@ -43,8 +43,42 @@
 #include "contiki-net.h"
 #include "contiki-lib.h"
 
-// LED's for Raven USB
+/*
+ * LED's for Raven USB
+ * LED1: PD7 ---> Led0
+ * LED2: PD5 ---> Led1
+ * LED3: PE7 ---> Led2
+ * LED4: PE6 ---> Led3
+ */
+
+/*
+ * Each port pin consists of three register bits: DDxn, PORTxn, and PINxn.
+ *
+ * The DDxn bit in the DDRx Register selects the direction of this pin.
+ * If DDxn is written logic one, Pxn is configured as an output pin.
+ * If DDxn is written logic zero, Pxn is configured as an input pin.
+ *
+ * If PORTxn is written logic one when the pin is configured as an input pin,
+ * the pull-up resistor is activated. To switch the pull-up resistor off,
+ * PORTxn has to be written logic zero or the pin has to be configured as an
+ * output pin.
+ *
+ * If PORTxn is written logic one when the pin is configured as an output pin,
+ * the port pin is driven high (one). If PORTxn is written logic zero when the
+ * pin is configured as an output pin, the port pin is driven low (zero).
+ *
+ * However, writing a logic one to a bit in the PINx Register, will result
+ * in a toggle in the correspond-ing bit in the Data Register.
+ *
+ * In addition, the Pull-up Disable – PUD bit in MCUCR disables the
+ * pull-up function for all pins in all ports when set.
+ */
 #define Leds_init()                 (DDRD  |=  0xA0, DDRE  |=  0xC0)
+/*
+ * Note: The Led0 port set 1 to turu on the led1
+ * Because the LED1 connect to a triode(三极管, A NPN type), After
+ * PORTD(LED1) have some change, the LED1 will be turn on
+ */
 #define Led0_on()                   (PORTD |=  0x80)
 #define Led1_on()                   (PORTD &= ~0x20)
 #define Led2_on()                   (PORTE &= ~0x80)
@@ -60,9 +94,7 @@
 #define Leds_on()                   (Led0_on(),Led1_on(),Led2_on(),Led3_on())
 #define Leds_off()                  (Led0_off(),Led1_off(),Led2_off(),Led3_off())
 
-
 void init_lowlevel(void);
 void init_net(void);
-
 
 #endif /* #ifndef __CONTIKI_RAVEN_H__ */

@@ -44,6 +44,7 @@
 #include <avr/fuse.h>
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
+#include <avr/signature.h>
 #include <util/delay.h>
 #include <stdio.h>
 #include <string.h>
@@ -107,19 +108,21 @@ rimeaddr_t macLongAddr;
 /*---------------------------------------------------------------------------*/
 /* TODO: Put rpl code into another file, once it stabilizes                  */
 /* Set up fallback interface links to direct stack tcpip output to ethernet  */
-static void
-init(void)
+
+static void init(void)
 {
 }
+
 void mac_LowpanToEthernet(void);
-static void
-output(void)
+
+static void output(void)
 {
-    PRINTD("SUT: %u\n", uip_len);
-    mac_LowpanToEthernet();  //bounceback trap is done in lowpanToEthernet
+	mac_LowpanToEthernet();  //bounceback trap is done in lowpanToEthernet
 }
+
 const struct uip_fallback_interface rpl_interface = {
-  init, output
+	init,
+	output
 };
 
 #if RPL_BORDER_ROUTER
@@ -132,40 +135,44 @@ PROCESS(border_router_process, "RPL Border Router");
 PROCESS_THREAD(border_router_process, ev, data)
 {
 
-  PROCESS_BEGIN();
+	PROCESS_BEGIN();
 
-  PROCESS_PAUSE();
+	PROCESS_PAUSE();
 
-{ rpl_dag_t *dag;
-  char buf[sizeof(dag_id)];
-  memcpy_P(buf,dag_id,sizeof(dag_id));
-  dag = rpl_set_root(RPL_DEFAULT_INSTANCE,(uip_ip6addr_t *)buf);
+	{
+		rpl_dag_t *dag;
+		char buf[sizeof(dag_id)];
 
-/* Assign separate addresses to the jackdaw uip stack and the host network interface, but with the same prefix */
-/* E.g. bbbb::200 to the jackdaw and bbbb::1 to the host network interface with $ip -6 address add bbbb::1/64 dev usb0 */
-/* Otherwise the host will trap packets intended for the jackdaw, just as the jackdaw will trap RF packets intended for the host */
-/* $ifconfig usb0 -arp on Ubuntu to skip the neighbor solicitations. Add explicit neighbors on other OSs */
-  if(dag != NULL) {
-    PRINTD("created a new RPL dag\n");
+		memcpy_P(buf, dag_id, sizeof(dag_id));
+		dag = rpl_set_root(RPL_DEFAULT_INSTANCE,(uip_ip6addr_t *)buf);
 
-#if UIP_CONF_ROUTER_RECEIVE_RA
-//Contiki stack will shut down until assigned an address from the interface RA
-//Currently this requires changes in the core rpl-icmp6.c to pass the link-local RA broadcast
-
-#else
-    uip_ip6addr_t ipaddr;
-    uip_ip6addr(&ipaddr, 0xbbbb, 0, 0, 0, 0, 0, 0, 0x200);
-    uip_ds6_addr_add(&ipaddr, 0, ADDR_MANUAL);
-    rpl_set_prefix(dag, &ipaddr, 64);
+		/*
+		 * Assign separate addresses to the jackdaw uip stack and the
+		 * host network interface, but with the same prefix
+		 *
+		 * E.g. bbbb::200 to the jackdaw and bbbb::1 to the host network
+		 * interface with $ip -6 address add bbbb::1/64 dev usb0
+		 * Otherwise the host will trap packets intended for the jackdaw,
+		 * just as the jackdaw will trap RF packets intended for the host
+		 *
+		 * $ifconfig usb0 -arp on Ubuntu to skip the neighbor solicitations.
+		 * Add explicit neighbors on other OSs
+		 */
+		if(dag != NULL) {
+#if !UIP_CONF_ROUTER_RECEIVE_RA
+			uip_ip6addr_t ipaddr;
+			uip_ip6addr(&ipaddr, 0xbbbb, 0, 0, 0, 0, 0, 0, 0x200);
+			uip_ds6_addr_add(&ipaddr, 0, ADDR_MANUAL);
+			rpl_set_prefix(dag, &ipaddr, 64);
 #endif
-  }
-}
+		}
+	}
 
-  while(1) {
-    PROCESS_YIELD();
-  }
+	while(1) {
+		PROCESS_YIELD();
+	}
 
-  PROCESS_END();
+	PROCESS_END();
 }
 #endif /* RPL_BORDER_ROUTER */
 
@@ -174,27 +181,33 @@ PROCESS_THREAD(border_router_process, ev, data)
 /*-------------------------------------------------------------------------*/
 /*----------------------Configuration of the .elf file---------------------*/
 /* The proper way to set the signature is */
-#include <avr/signature.h>
-
-FUSES ={.low = 0xde, .high = 0x99, .extended = 0xff,};
+FUSES ={
+		.low = 0xde,
+		.high = 0x99,
+		.extended = 0xff,
+	};
 
 /* Save the default settings into program flash memory */
 const uint8_t default_mac_address[8] PROGMEM = {0x02, 0x12, 0x13, 0xff, 0xfe, 0x14, 0x15, 0x16};
+
 #ifdef CHANNEL_802_15_4
 const uint8_t default_channel PROGMEM = CHANNEL_802_15_4;
 #else
 const uint8_t default_channel PROGMEM = 26;
 #endif
+
 #ifdef IEEE802154_PANID
 const uint16_t default_panid PROGMEM = IEEE802154_PANID;
 #else
 const uint16_t default_panid PROGMEM = 0xABCD;
 #endif
+
 #ifdef IEEE802154_PANADDR
 const uint16_t default_panaddr PROGMEM = IEEE802154_PANID;
 #else
 const uint16_t default_panaddr PROGMEM = 0;
 #endif
+
 #ifdef RF230_MAX_TX_POWER
 const uint8_t default_txpower PROGMEM = RF230_MAX_TX_POWER;
 #else
@@ -203,8 +216,7 @@ const uint8_t default_txpower PROGMEM = 0;
 
 #if JACKDAW_CONF_RANDOM_MAC
 #include "rng.h"
-static void
-generate_new_eui64(uint8_t eui64[8]) {
+static void generate_new_eui64(uint8_t eui64[8]) {
 	eui64[0] = 0x02;
 	eui64[1] = rng_get_uint8();
 	eui64[2] = rng_get_uint8();
@@ -224,60 +236,77 @@ generate_new_eui64(uint8_t eui64[8]) {
  * If corrupt all values will be rewritten with the default flash values.
  * To make this work, get the channel before anything else.
  */
-
 uint8_t eemem_mac_address[8] EEMEM = {0x02, 0x12, 0x13, 0xff, 0xfe, 0x14, 0x15, 0x16};
+
 #ifdef CHANNEL_802_15_4
 uint8_t eemem_channel[2] EEMEM = {CHANNEL_802_15_4, ~CHANNEL_802_15_4};
 #else
 uint8_t eemem_channel[2] EMEM = {26, ~26};
 #endif
+
 #ifdef IEEE802154_PANID
 uint16_t eemem_panid EEMEM = IEEE802154_PANID;
 #else
 uint16_t eemem_panid EEMEM = 0xABCD;
 #endif
+
 #ifdef IEEE802154_PANADDR
 uint16_t eemem_panaddr EEMEM = IEEE802154_PANADDR;
 #else
 uint16_t eemem_panaddr EEMEM = 0;
 #endif
+
 #ifdef RF230_MAX_TX_POWER
 uint8_t eemem_txpower EEMEM = RF230_MAX_TX_POWER;
 #else
 uint8_t eemem_txpower EEMEM = 0;
 #endif
+
 static uint8_t get_channel_from_eeprom() {
 	uint8_t x[2];
+
 	*(uint16_t *)x = eeprom_read_word ((uint16_t *)&eemem_channel);
-    if((uint8_t)x[0]!=(uint8_t)~x[1]) {//~x[1] can promote comparison to 16 bit
-/* Verification fails, rewrite everything */
-    uint8_t mac[8];
+
+	if((uint8_t)x[0] != (uint8_t)~x[1]) {//~x[1] can promote comparison to 16 bit
+		/* Verification fails, rewrite everything */
+		uint8_t mac[8];
 #if JACKDAW_CONF_RANDOM_MAC
-    PRINTA("Generating random MAC address.\n");
-    generate_new_eui64(&mac);
+		PRINTA("Generating random MAC address.\n");
+		generate_new_eui64(&mac);
 #else
-    {uint8_t i; for (i=0;i<8;i++) mac[i] = pgm_read_byte_near(default_mac_address+i);}
+		{
+			uint8_t i;
+
+			for (i = 0; i < 8; i++)
+				mac[i] = pgm_read_byte_near(default_mac_address+i);
+		}
 #endif
-	eeprom_write_block(&mac,  &eemem_mac_address, 8);
-  	eeprom_write_word(&eemem_panid  , pgm_read_word_near(&default_panid));
-   	eeprom_write_word(&eemem_panaddr, pgm_read_word_near(&default_panaddr));
-    eeprom_write_byte(&eemem_txpower, pgm_read_byte_near(&default_txpower));
-    x[0] = pgm_read_byte_near(&default_channel);
-    x[1]= ~x[0];
-    eeprom_write_word((uint16_t *)&eemem_channel, *(uint16_t *)x);    
-  }
-  return x[0];
+		eeprom_write_block(&mac,  &eemem_mac_address, 8);
+		eeprom_write_word(&eemem_panid  , pgm_read_word_near(&default_panid));
+		eeprom_write_word(&eemem_panaddr, pgm_read_word_near(&default_panaddr));
+		eeprom_write_byte(&eemem_txpower, pgm_read_byte_near(&default_txpower));
+
+		x[0] = pgm_read_byte_near(&default_channel);
+		x[1]= ~x[0];
+		eeprom_write_word((uint16_t *)&eemem_channel, *(uint16_t *)x);    
+	}
+
+	return x[0];
 }
+
 static bool get_eui64_from_eeprom(uint8_t macptr[8]) {
 	eeprom_read_block ((void *)macptr, &eemem_mac_address, 8);
 	return macptr[0]!=0xFF;
 }
+
 static uint16_t get_panid_from_eeprom(void) {
 	return eeprom_read_word(&eemem_panid);
 }
+
 static uint16_t get_panaddr_from_eeprom(void) {
 	return eeprom_read_word (&eemem_panaddr);
 }
+
 static uint8_t get_txpower_from_eeprom(void)
 {
 	return eeprom_read_byte(&eemem_txpower);
@@ -287,62 +316,77 @@ static uint8_t get_txpower_from_eeprom(void)
 /******************************Settings manager******************************/
 static uint8_t get_channel_from_eeprom() {
 	uint8_t x = settings_get_uint8(SETTINGS_KEY_CHANNEL, 0);
-	if(!x) x = pgm_read_byte_near(&default_channel);
+
+	if(!x)
+		x = pgm_read_byte_near(&default_channel);
 	return x;
 }
+
 static bool get_eui64_from_eeprom(uint8_t macptr[8]) {
 	size_t size = 8;
-	if(settings_get(SETTINGS_KEY_EUI64, 0, (unsigned char*)macptr, &size)==SETTINGS_STATUS_OK) {
-      PRINTD("<=Get EEPROM MAC address.\n");
-      return true;		
-    }
+
+	if(settings_get(SETTINGS_KEY_EUI64,
+			0,
+			(unsigned char*)macptr, &size) == SETTINGS_STATUS_OK) {
+		return true;
+	}
+
 #if JACKDAW_CONF_RANDOM_MAC
-    PRINTA("--Generating random MAC address.\n");
-    generate_new_eui64(macptr);
+	PRINTA("--Generating random MAC address.\n");
+	generate_new_eui64(macptr);
 #else
-    {uint8_t i;for (i=0;i<8;i++) macptr[i] = pgm_read_byte_near(default_mac_address+i);}
+	{
+		uint8_t i;
+
+		for (i = 0; i < 8; i++)
+			macptr[i] = pgm_read_byte_near(default_mac_address+i);
+	}
 #endif
-    settings_add(SETTINGS_KEY_EUI64,(unsigned char*)macptr,8);
-    PRINTA("->Set EEPROM MAC address.\n");
+	settings_add(SETTINGS_KEY_EUI64, (unsigned char*)macptr, 8);
+	PRINTA("->Set EEPROM MAC address.\n");
+
 	return true;
 }
+
 static uint16_t get_panid_from_eeprom(void) {
-    uint16_t x;
-    if (settings_check(SETTINGS_KEY_PAN_ID,0)) {
-        x = settings_get_uint16(SETTINGS_KEY_PAN_ID,0);
-        PRINTD("<-Get EEPROM PAN ID of %04x.\n",x);
-    } else {
-	    x=pgm_read_word_near(&default_panid);
-        if (settings_add_uint16(SETTINGS_KEY_PAN_ID,x)==SETTINGS_STATUS_OK) {
-          PRINTA("->Set EEPROM PAN ID to %04x.\n",x);
-        }
-    }
+	uint16_t x;
+
+	if (settings_check(SETTINGS_KEY_PAN_ID,0)) {
+		x = settings_get_uint16(SETTINGS_KEY_PAN_ID,0);
+	} else {
+		x=pgm_read_word_near(&default_panid);
+		if (settings_add_uint16(SETTINGS_KEY_PAN_ID, x) == SETTINGS_STATUS_OK) {
+			PRINTA("->Set EEPROM PAN ID to %04x.\n",x);
+		}
+	}
 	return x;
 }
+
 static uint16_t get_panaddr_from_eeprom(void) {
-    uint16_t x;
-    if (settings_check(SETTINGS_KEY_PAN_ADDR,0)) {
-        x = settings_get_uint16(SETTINGS_KEY_PAN_ADDR,0);
-        PRINTD("<-Get EEPROM PAN address of %04x.\n",x);
-    } else {
-	    x=pgm_read_word_near(&default_panaddr);
-        if (settings_add_uint16(SETTINGS_KEY_PAN_ADDR,x)==SETTINGS_STATUS_OK) {
-          PRINTA("->Set EEPROM PAN address to %04x.\n",x);
-        }
-    }        
+	uint16_t x;
+
+	if (settings_check(SETTINGS_KEY_PAN_ADDR, 0)) {
+		x = settings_get_uint16(SETTINGS_KEY_PAN_ADDR,0);
+	} else {
+		x=pgm_read_word_near(&default_panaddr);
+		if (settings_add_uint16(SETTINGS_KEY_PAN_ADDR, x) == SETTINGS_STATUS_OK) {
+			PRINTA("->Set EEPROM PAN address to %04x.\n",x);
+		}
+	}        
 	return x;
 }
+
 static uint8_t get_txpower_from_eeprom(void) {
-    uint8_t x;
-    if (settings_check(SETTINGS_KEY_TXPOWER,0)) {
-        x = settings_get_uint8(SETTINGS_KEY_TXPOWER,0);
-        PRINTD("<-Get EEPROM tx power of %d. (0=max)\n",x);
-    } else {
-	    x=pgm_read_byte_near(&default_txpower);
-        if (settings_add_uint8(SETTINGS_KEY_TXPOWER,x)==SETTINGS_STATUS_OK) {
-          PRINTA("->Set EEPROM tx power of %d. (0=max)\n",x);
-        }
-    }
+	uint8_t x;
+
+	if (settings_check(SETTINGS_KEY_TXPOWER, 0)) {
+		x = settings_get_uint8(SETTINGS_KEY_TXPOWER, 0);
+	} else {
+		x=pgm_read_byte_near(&default_txpower);
+		if (settings_add_uint8(SETTINGS_KEY_TXPOWER, x) == SETTINGS_STATUS_OK) {
+			PRINTA("->Set EEPROM tx power of %d. (0=max)\n",x);
+		}
+	}
 	return x;
 }
 #endif /* !JACKDAW_CONF_USE_SETTINGS */
@@ -367,6 +411,8 @@ static void initialize(void) {
 		} while (p < SP - 100); //don't overwrite our own stack
 	}
 #endif
+	/* Led0 Blue Led1 Red Led2 Green Led3 Yellow */
+	Leds_init();
 
 	/* Initialize hardware */
 	// Checks for "finger", jumps to DFU if present.
@@ -376,8 +422,6 @@ static void initialize(void) {
 	clock_init();
 
 	/* Leds are referred to by number to prevent any possible confusion :) */
-	/* Led0 Blue Led1 Red Led2 Green Led3 Yellow */
-	Leds_init();
 	Led1_on();
 
 	/* Get a random (or probably different) seed for the 802.15.4 packet sequence number.
@@ -388,13 +432,14 @@ static void initialize(void) {
 	ADCSRA = 1 << ADEN;           //Enable ADC, not free running, interrupt disabled, fastest clock
 	ADCSRA |= 1 << ADSC;          //Start conversion
 	while (ADCSRA & (1 << ADSC)); //Wait till done
-	PRINTD("ADC=%d\n",ADC);
 	random_init(ADC);
 	ADCSRA=0;                 //Disable ADC
 
 #if USB_CONF_RS232
 	/* Use rs232 port for serial out (tx, rx, gnd are the three pads behind jackdaw leds */
-	rs232_init(RS232_PORT_0, USART_BAUD_57600,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
+	rs232_init(RS232_PORT_0,
+		   USART_BAUD_57600,
+		   USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
 	/* Redirect stdout to second port */
 	rs232_redirect_stdout(RS232_PORT_0);
 #if ANNOUNCE
@@ -415,8 +460,8 @@ static void initialize(void) {
 	/* Now we can start USB enumeration */
 	process_start(&usb_process, NULL);
 
-  /* Start CDC enumeration, bearing in mind that it may fail */
-  /* Hopefully we'll get a stdout for startup messages, if we don't already */
+	/* Start CDC enumeration, bearing in mind that it may fail */
+	/* Hopefully we'll get a stdout for startup messages, if we don't already */
 #if USB_CONF_SERIAL
 	process_start(&cdc_process, NULL);
 	{
@@ -437,15 +482,16 @@ static void initialize(void) {
   
 #if RF230BB
 #if JACKDAW_CONF_USE_SETTINGS
-  PRINTA("Settings manager will be used.\n");
+	PRINTA("Settings manager will be used.\n");
 #else
-{uint8_t x[2];
-	*(uint16_t *)x = eeprom_read_word((uint16_t *)&eemem_channel);
-	if((uint8_t)x[0]!=(uint8_t)~x[1]) {
-        PRINTA("Invalid EEPROM settings detected. Rewriting with default values.\n");
-        get_channel_from_eeprom();
-    }
-}
+	{
+		uint8_t x[2];
+		*(uint16_t *)x = eeprom_read_word((uint16_t *)&eemem_channel);
+		if((uint8_t)x[0] != (uint8_t)~x[1]) {
+			PRINTA("Invalid EEPROM settings detected. Rewriting with default values.\n");
+			get_channel_from_eeprom();
+		}
+	}
 #endif
 
 	ctimer_init();
@@ -511,16 +557,13 @@ static void initialize(void) {
 #if RPL_BORDER_ROUTER
 	process_start(&tcpip_process, NULL);
 	process_start(&border_router_process, NULL);
-	PRINTD ("RPL Border Router Started\n");
 #else
 	process_start(&tcpip_process, NULL);
-	PRINTD ("RPL Started\n");
 #endif
 
 #if RPL_HTTPD_SERVER
 	extern struct process httpd_process;
 	process_start(&httpd_process, NULL);
-	PRINTD ("Webserver Started\n");
 #endif
 #endif /* UIP_CONF_IPV6_RPL */
 

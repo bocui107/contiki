@@ -45,73 +45,69 @@ uint8_t checkForFinger(void);
 
 uint8_t fingerPresent = 0;
 
-/* Defining this allows you to mount the USB Stick as a mass storage device by shorting the two pins. See docs. */
+/* Defining this allows you to mount the USB Stick as a mass
+ * storage device by shorting the two pins. See docs. */
 //#define WINXPSP2
 
 void
 init_lowlevel(void)
 {
-    Leds_init();
-    Leds_off();
+	Leds_off();
 
         if (checkForFinger()) {
-			if(bootloader_is_present())
-				Jump_To_Bootloader();
+		if(bootloader_is_present())
+			Jump_To_Bootloader();
 #ifdef WINXPSP2
-				usb_mode = mass_storage;
+			usb_mode = mass_storage;
 #else
                 fingerPresent = 1;
 #endif
-        }
+	}
 
- return;
-
+	return;
 }
 
 
 uint8_t checkForFinger(void)
 {
-  uint8_t tests;
-  uint8_t matches;
- 
- /*    
-         Three pads on RZUSBSTICK go: GND PD3 PD2
-     
-         We pulse PD3, and check for that pattern on PD2.
+	uint8_t tests;
+	uint8_t matches;
 
-          A (moist) finger across those three pads should be enough
-          to bridge these
-  */
+	/*    
+	 * Three pads on RZUSBSTICK go: GND PD3 PD2
+	 * We pulse PD3, and check for that pattern on PD2.
+	 * A (moist) finger across those three pads should be enough
+	 * to bridge these
+	 */
 
-  //Output
-  DDRD |= 1<<PD3;
- 
-  //Input
-  DDRD &= ~(1<<PD2);
+	//Output
+	DDRD |= 1 << PD3;
 
+	//Input
+	DDRD &= ~(1 << PD2);
 
+	tests = 100;
+	matches = 0;
 
-  tests = 100;
-  matches = 0;
-  while(tests) {
+	while(tests) {
 
-      //Set bit PD3 to value of LSB of 'tests'
-          PORTD = (PORTD & ~(1<<PD3)) | ( (tests & 0x01) << PD3);
+		//Set bit PD3 to value of LSB of 'tests'
+		PORTD = (PORTD & ~(1 << PD3)) | ( (tests & 0x01) << PD3);
 
-          //Allow changes to propogate
-          _delay_us(1);
+		//Allow changes to propogate
+		_delay_us(1);
 
-          //Check if PD2 matches what we set PD3 to
-          if ((PIND & (1<<PD2)) == ((tests & 0x01) << PD2)) {
-                        matches++;      
-          }
+		//Check if PD2 matches what we set PD3 to
+		if ((PIND & (1 << PD2)) == ((tests & 0x01) << PD2)) {
+			matches++;      
+		}
 
-          tests--;
-   }
+		tests--;
+	}
 
-   if (matches > 70) {
-      return 1;
-   }
+	if (matches > 70) {
+		return 1;
+	}
 
-   return 0;
+	return 0;
 }

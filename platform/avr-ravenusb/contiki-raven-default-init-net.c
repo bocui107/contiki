@@ -42,27 +42,26 @@
 
 void byte_reverse(uint8_t * bytes, uint8_t num)
 {
-  uint8_t tempbyte;
-  
-  uint8_t i, j;
-  
-  i = 0;
-  j = num - 1;
-  
-  while(i < j) {
-	  tempbyte = bytes[i];
-	  bytes[i] = bytes[j];
-	  bytes[j] = tempbyte;
+	uint8_t tempbyte;
 
-	  j--;
-	  i++; 
-  }
-  
-  return;
+	uint8_t i, j;
+
+	i = 0;
+	j = num - 1;
+
+	while(i < j) {
+		tempbyte = bytes[i];
+		bytes[i] = bytes[j];
+		bytes[j] = tempbyte;
+
+		j--;
+		i++; 
+	}
+
+	return;
 }
 
-void
-init_net(void)
+void init_net(void)
 {
 	extern uint64_t macLongAddr;
 	uint64_t usb_ethernet_addr;
@@ -70,28 +69,32 @@ init_net(void)
 	// Because all of the logic below is done using little-endian
 	// 64-bit integers, we need to reverse the byte order before
 	// we can continue;
-	byte_reverse((uint8_t*)&macLongAddr,8);
+	byte_reverse((uint8_t*)&macLongAddr, 8);
 
 	/* Set local bit, Clear translate bit, Clear Multicast bit */
 	macLongAddr &= ~(0x0700000000000000ULL);
-	macLongAddr |=   0x0200000000000000ULL;
+	macLongAddr |= 0x0200000000000000ULL;
 
 	/* Set the Ethernet address to the 15.4 MAC address */
 	usb_ethernet_addr =  macLongAddr;
 
 	/* Remove the middle two bytes... */
-	usb_ethernet_addr = (usb_ethernet_addr & 0xffffffUL) | ((usb_ethernet_addr & 0xffffff0000000000ULL) >> 16);
+	usb_ethernet_addr = (usb_ethernet_addr & 0xffffffUL) | \
+		((usb_ethernet_addr & 0xffffff0000000000ULL) >> 16);
 
-	/* Change ieee802.15.4 address to correspond with what the ethernet's
-	 IPv6 address will be. This will have ff:fe in the middle.         */
+	/*
+	 * Change ieee802.15.4 address to correspond with what
+	 * the ethernet's IPv6 address will be. This will have
+	 * ff:fe in the middle.
+	 */
 	macLongAddr = (macLongAddr & 0xffffff0000ffffffULL) | (0x000000fffe000000ULL);
 
 #if !RF230BB
 	ieee15_4ManagerAddress.set_long_addr(macLongAddr); 
 #endif
 
-	byte_reverse((uint8_t*)&macLongAddr,8);
-	byte_reverse((uint8_t*)&usb_ethernet_addr,6);
+	byte_reverse((uint8_t*)&macLongAddr, 8);
+	byte_reverse((uint8_t*)&usb_ethernet_addr, 6);
 
 	usb_eth_set_mac_address((uint8_t*)&usb_ethernet_addr);
 }
