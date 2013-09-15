@@ -85,7 +85,6 @@ void clock_adjust_ticks(clock_time_t howmany);
 
 /* Use EEPROM settings manager, or hard-coded EEPROM reads? */
 /* Random number from radio clock skew or ADC noise? */
-#define JACKDAW_CONF_USE_SETTINGS	0
 #define RNG_CONF_USE_RADIO_CLOCK	1
 
 /* COM port to be used for SLIP connection. Not tested on Jackdaw. */

@@ -84,10 +84,6 @@
 #include "dev/watchdog.h"
 #include "dev/usb/usb_drv.h"
 
-#if JACKDAW_CONF_USE_SETTINGS
-#include "settings.h"
-#endif
-
 #if RF230BB           //radio driver using contiki core mac
 #include "radio/rf230bb/rf230bb.h"
 #include "net/mac/frame802154.h"
@@ -214,7 +210,6 @@ const uint8_t default_txpower PROGMEM = RF230_MAX_TX_POWER;
 const uint8_t default_txpower PROGMEM = 0;
 #endif
 
-#if !JACKDAW_CONF_USE_SETTINGS
 /****************************No settings manager*****************************/
 /* If not using the settings manager, put the default values into EEMEM
  * These can be manually changed and kept over program reflash.
@@ -291,78 +286,6 @@ static uint8_t get_txpower_from_eeprom(void)
 {
 	return eeprom_read_byte(&eemem_txpower);
 }
-
-#else /* !JACKDAW_CONF_USE_SETTINGS */
-/******************************Settings manager******************************/
-static uint8_t get_channel_from_eeprom() {
-	uint8_t x = settings_get_uint8(SETTINGS_KEY_CHANNEL, 0);
-
-	if(!x)
-		x = pgm_read_byte_near(&default_channel);
-	return x;
-}
-
-static bool get_eui64_from_eeprom(uint8_t macptr[8]) {
-	size_t size = 8;
-	uint8_t i;
-
-	if(settings_get(SETTINGS_KEY_EUI64,
-			0,
-			(unsigned char*)macptr, &size) == SETTINGS_STATUS_OK) {
-		return true;
-	}
-
-	for (i = 0; i < 8; i++)
-		macptr[i] = pgm_read_byte_near(default_mac_address+i);
-
-	settings_add(SETTINGS_KEY_EUI64, (unsigned char*)macptr, 8);
-	PRINTA("->Set EEPROM MAC address.\n");
-
-	return true;
-}
-
-static uint16_t get_panid_from_eeprom(void) {
-	uint16_t x;
-
-	if (settings_check(SETTINGS_KEY_PAN_ID,0)) {
-		x = settings_get_uint16(SETTINGS_KEY_PAN_ID,0);
-	} else {
-		x=pgm_read_word_near(&default_panid);
-		if (settings_add_uint16(SETTINGS_KEY_PAN_ID, x) == SETTINGS_STATUS_OK) {
-			PRINTA("->Set EEPROM PAN ID to %04x.\n",x);
-		}
-	}
-	return x;
-}
-
-static uint16_t get_panaddr_from_eeprom(void) {
-	uint16_t x;
-
-	if (settings_check(SETTINGS_KEY_PAN_ADDR, 0)) {
-		x = settings_get_uint16(SETTINGS_KEY_PAN_ADDR,0);
-	} else {
-		x=pgm_read_word_near(&default_panaddr);
-		if (settings_add_uint16(SETTINGS_KEY_PAN_ADDR, x) == SETTINGS_STATUS_OK) {
-			PRINTA("->Set EEPROM PAN address to %04x.\n",x);
-		}
-	}        
-	return x;
-}
-
-static uint8_t get_txpower_from_eeprom(void) {
-	uint8_t x;
-
-	if (settings_check(SETTINGS_KEY_TXPOWER, 0)) {
-		x = settings_get_uint8(SETTINGS_KEY_TXPOWER, 0);
-	} else {
-		x=pgm_read_byte_near(&default_txpower);
-		if (settings_add_uint8(SETTINGS_KEY_TXPOWER, x) == SETTINGS_STATUS_OK) {
-			PRINTA("->Set EEPROM tx power of %d. (0=max)\n",x);
-		}
-	}
-	return x;
-}
-#endif /* !JACKDAW_CONF_USE_SETTINGS */
 
 /*-------------------------------------------------------------------------*/
 /*-----------------------------Low level initialization--------------------*/
@@ -454,9 +377,6 @@ static void initialize(void) {
 		Led3_on();
   
 #if RF230BB
-#if JACKDAW_CONF_USE_SETTINGS
-	PRINTA("Settings manager will be used.\n");
-#else
 	{
 		uint8_t x[2];
 		*(uint16_t *)x = eeprom_read_word((uint16_t *)&eemem_channel);
@@ -465,7 +385,6 @@ static void initialize(void) {
 			get_channel_from_eeprom();
 		}
 	}
-#endif
 
 	ctimer_init();
 	/* Start radio and radio receive process */

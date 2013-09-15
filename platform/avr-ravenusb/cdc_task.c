@@ -74,10 +74,6 @@
 #include <avr/wdt.h>
 #include <util/delay.h>
 
-#if JACKDAW_CONF_USE_SETTINGS
-#include "settings.h"
-#endif
-
 #define BUF ((struct uip_eth_hdr *)&uip_buf[0])
 #define PRINTF printf
 #define PRINTF_P printf_P
@@ -312,15 +308,7 @@ void menu_process(char c)
 						PRINTF_P(PSTR("\n\rInvalid input\n\r"));
 					} else {
 #endif
-#if JACKDAW_CONF_USE_SETTINGS
-						if(settings_set_uint8(SETTINGS_KEY_CHANNEL, tempchannel)==SETTINGS_STATUS_OK) {                       
-                            PRINTF_P(PSTR("\n\rChannel changed to %d and stored in EEPROM.\n\r"),tempchannel);
-						} else {
-                            PRINTF_P(PSTR("\n\rChannel changed to %d, but unable to store in EEPROM!\n\r"),tempchannel);
-                        }
-#else
 						PRINTF_P(PSTR("\n\rChannel changed to %d.\n\r"),tempchannel);
-#endif
 					}
 				} else {
 					PRINTF_P(PSTR("\n\rChannel unchanged.\n\r"));
@@ -384,19 +372,8 @@ void menu_process(char c)
 						PRINTF_P(PSTR("\n\rInvalid input\n\r"));
 					} else {
 #endif
-#if JACKDAW_CONF_USE_SETTINGS
-						if(settings_set_uint8(SETTINGS_KEY_TXPOWER, tempchannel) ==
-							SETTINGS_STATUS_OK) {
-							PRINTF_P(PSTR("\n\rTransmit power changed to %d,
-								 and stored in EEPROM.\n\r"),tempchannel);
-						} else {
-							PRINTF_P(PSTR("\n\rTransmit power changed to %d, but
-							      unable to store in EEPROM!\n\r"),tempchannel);
-						}
-#else
 						PRINTF_P(PSTR("\n\rTransmit power changed to %d.\n\r"),
 										tempchannel);
-#endif
 					}
 				} else {
 					PRINTF_P(PSTR("\n\rTransmit power unchanged.\n\r"));
