@@ -68,8 +68,8 @@
 #include "dev/clock-avr.h"
 #include "sys/etimer.h"
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
+#include  <avr/io.h>
+#include  <avr/interrupt.h>
 
 /* Two tick counters avoid a software divide when CLOCK_SECOND is not a power of two. */
 #if CLOCK_SECOND && (CLOCK_SECOND - 1)
@@ -98,9 +98,11 @@ volatile unsigned long radioontime;
 extern uint8_t RF230_receive_on;
 #endif
 
-/* Set RADIO_CONF_CALIBRATE_INTERVAL for periodic calibration of the PLL during extended radio on time.
- * The RF230 data sheet suggests every 5 minutes if the temperature is fluctuating.
- * At present the specified interval is ignored, and an 8 bit counter gives 256 second intervals.
+/*
+ * Set RADIO_CONF_CALIBRATE_INTERVAL for periodic calibration of the PLL
+ * during extended radio on time. The RF230 data sheet suggests every 5
+ * minutes if the temperature is fluctuating. At present the specified
+ * interval is ignored, and an 8 bit counter gives 256 second intervals.
  * Actual calibration is done by the driver on the next transmit request.
  */
 #if RADIO_CONF_CALIBRATE_INTERVAL
@@ -108,16 +110,83 @@ extern volatile uint8_t rf230_calibrate;
 static uint8_t calibrate_interval;
 #endif
 
-/*---------------------------------------------------------------------------*/
+#if 0
+#define F_CPU			8000000UL
+#define CLOCK_CONF_SECOND	125
+#define AVR_CONF_TMR0_PRESCALE	256
+#define AVR_TCCR0B_CONF		_BV(CS02)
+
+每秒8000000Hz, 每秒的时钟滴答数是125(每秒的中断数)
+每个时钟滴答的时间为 1000000us / (8000000 / 125) = 125 / 8 us = 15.6 us
+每个时钟滴答所需要的时钟周期数为8000000 / 125 = 64000
+
+然而经过时钟预分频之后, 预分频的值为8000000 / 256 = 31250 Hz
+每个时钟滴答的时间为: 1000000us / (31250 / 125) = 4000us = 4 ms
+每个时钟滴答所需要的时钟周期数为: 8000000 / 256 / 125 = 250 周期
+
+#define AVR_OUTPUT_COMPARE_INT TIMER0_COMPA_vect
+
+#define OCRSetup()
+	/* Select internal clock */
+	ASSR = 0x00;
+	/* Bit 0: 0 indicates taht TCCR2B is ready to be updated with a new value
+	 * Bit 1: 0 indicates that TCCR2A is ready to be updated with a new value
+	 * Bit 2: 0 indicates that OCR2B is ready to be updated with a new value
+	 * Bit 3: 0 indicates that OCR2A is ready to be updated with a new value
+	 * Bit 4: 0 indicates taht TCNT2 is ready to be updated with a new value
+	 * Bit 5: When AS2 is written to zero, Timer/Counter2 is clocked from the I/O clock.
+	 * Bit 6: The crystal Oscillator will only run when this bit is zero
+	 */
+
+	/* Set counter to zero */
+	/*
+	 * The Timer/Counter(TCNT0) and output compare registers(OCR0A and OCR0B) are
+	 * 8 bit registers. Interrupt request signals are all visible in the Timer
+	 * interrupt flag register(TIFR0). all interrupts are individulaly masked with
+	 * the timer interrupt mask register(TIMSK0). TiFR0 and TIMSK0 are not show in
+	 * the figure.
+	 *
+	 * The Timer/Couunter can be clocked internally, via the prescaler, or by an
+	 * external clock source on the T0 pin. The clock select logic block controls
+	 * which clock source and edge the Timer/counter uses to increment its values.
+	 */ 
+	TCNT0 = 0;
+
+	/*
+	 * Set comparison register:
+	 * Crystal freq. is F_CPU, prescale is given,
+	 * We want CLOCK_CONF_SECOND ticks / sec:
+	 * F_CPU = AVR_CONF_TMR0_PRESCALE * CLOCK_CONF_SECOND * OCR2A, less 1 for CTC mode
+	 */
+	OCR0A = F_CPU / AVR_CONF_TMR0_PRESCALE / CLOCK_CONF_SECOND - 1;
+
+	/*
+	 * Set timer control register:
+	 *  - prescale according to AVR_CONF_TMR0_PRESCALE
+	 *  - counter reset via comparison register (WGM01)
+	 */
+	TCCR0A = _BV(WGM01);
+	TCCR0B =  AVR_TCCR0B_CONF;
+
+	/* Clear interrupt flag register */
+	TIFR0 = TIFR0;
+
+	/*
+	 * Raise interrupt when value in OCR0 is reached. Note that the
+	 * counter value in TCNT0 is cleared automatically.
+	 */
+	TIMSK0 = _BV (OCIE0A);
+#endif
+
 /**
  * Start the clock by enabling the timer comparison interrupts. 
  */
 void
 clock_init(void)
 {
-  cli ();
-  OCRSetup();
-  sei ();
+	cli ();
+	OCRSetup();
+	sei ();
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -128,11 +197,13 @@ clock_init(void)
 clock_time_t
 clock_time(void)
 {
-  clock_time_t tmp;
-  do {
-    tmp = count;
-  } while(tmp != count);
-  return tmp;
+	clock_time_t tmp;
+
+	do {
+		tmp = count;
+	} while(tmp != count);
+
+	return tmp;
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -143,11 +214,13 @@ clock_time(void)
 unsigned long
 clock_seconds(void)
 {
-  unsigned long tmp;
-  do {
-    tmp = seconds;
-  } while(tmp != seconds);
-  return tmp;
+	unsigned long tmp;
+
+	do {
+		tmp = seconds;
+	} while(tmp != seconds);
+
+	return tmp;
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -156,7 +229,7 @@ clock_seconds(void)
 void
 clock_set_seconds(unsigned long sec)
 {
-  seconds = sec;
+	seconds = sec;
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -165,14 +238,18 @@ clock_set_seconds(unsigned long sec)
 void
 clock_wait(clock_time_t t)
 {
-  clock_time_t endticks = clock_time() + t;
-  if (sizeof(clock_time_t) == 1) {
-    while ((signed char )(clock_time() - endticks) < 0) {;}
-  } else if (sizeof(clock_time_t) == 2) {
-    while ((signed short)(clock_time() - endticks) < 0) {;}
-  } else {
-    while ((signed long )(clock_time() - endticks) < 0) {;}
-  }
+	clock_time_t endticks = clock_time() + t;
+
+	if (sizeof(clock_time_t) == 1) {
+		while ((signed char )(clock_time() - endticks)  <  0)
+			{;}
+	} else if (sizeof(clock_time_t) == 2) {
+		while ((signed short)(clock_time() - endticks)  <  0)
+			{;}
+	} else {
+		while ((signed long )(clock_time() - endticks)  <  0)
+			{;}
+	}
 }
 /*---------------------------------------------------------------------------*/
 /**
@@ -185,68 +262,57 @@ static inline void my_delay_loop_2(uint16_t __count) __attribute__((always_inlin
 void
 my_delay_loop_2(uint16_t __count)
 {
-  __asm__ volatile (
-    "1: sbiw %0,1" "\n\t"
-    "brne 1b"
-    : "=w" (__count)
-    : "0" (__count)
-  );
+	__asm__ volatile (
+		"1: sbiw %0,1" "\n\t"
+		"brne 1b"
+		: "=w" (__count)
+		: "0" (__count)
+	);
 }
+
 void
 clock_delay_usec(uint16_t howlong)
 {
-#if 0
-/* Accurate delay at any frequency, but introduces a 64 bit intermediate
-  * and has a 279 clock overhead.
- */
-  if(howlong<=(uint16_t)(279000000UL/F_CPU)) return;
-  howlong-=(uint16_t) (279000000UL/F_CPU);
-  my_delay_loop_2(((uint64_t)(howlong) * (uint64_t) F_CPU) / 4000000ULL);
-  /* Remaining numbers tweaked for the breakpoint CPU frequencies */
-  /* Add other frequencies as necessary */
-#elif F_CPU>=16000000UL
-  if(howlong<1) return;
-  my_delay_loop_2((howlong*(uint16_t)(F_CPU/3250000)));
+#if F_CPU >= 16000000UL
+	if(howlong < 1)
+		return;
+	my_delay_loop_2((howlong * (uint16_t)(F_CPU / 3250000)));
 #elif F_CPU >= 12000000UL
-  if(howlong<2) return;
-  howlong-=(uint16_t) (3*12000000/F_CPU);
-  my_delay_loop_2((howlong*(uint16_t)(F_CPU/3250000)));
+	if(howlong < 2)
+		return;
+	howlong -= (uint16_t)(3 * 12000000 / F_CPU);
+	my_delay_loop_2((howlong * (uint16_t)(F_CPU / 3250000)));
 #elif F_CPU >= 8000000UL
-  if(howlong<4) return;
-  howlong-=(uint16_t) (3*8000000/F_CPU);
-  my_delay_loop_2((howlong*(uint16_t)(F_CPU/2000000))/2);
+	if(howlong < 4)
+		return;
+	howlong -= (uint16_t)(3 * 8000000 / F_CPU);
+	my_delay_loop_2((howlong * (uint16_t)(F_CPU / 2000000)) / 2);
+	/*
+	 * 1 us = 8 clk. But 4 clocks per loop for my_delay_loop_2
+	 */
 #elif F_CPU >= 4000000UL
-  if(howlong<5) return;
-  howlong-=(uint16_t) (4*4000000/F_CPU);
-  my_delay_loop_2((howlong*(uint16_t)(F_CPU/2000000))/2);
+	if(howlong < 5)
+		return;
+	howlong -= (uint16_t)(4 * 4000000 / F_CPU);
+	my_delay_loop_2((howlong * (uint16_t)(F_CPU / 2000000)) / 2);
 #elif F_CPU >= 2000000UL
-  if(howlong<11) return;
-  howlong-=(uint16_t) (10*2000000/F_CPU);
-  my_delay_loop_2((howlong*(uint16_t)(F_CPU/1000000))/4);
+	if(howlong < 11)
+		return;
+	howlong -= (uint16_t)(10 * 2000000 / F_CPU);
+	my_delay_loop_2((howlong * (uint16_t)(F_CPU / 1000000)) / 4);
 #elif F_CPU >= 1000000UL
-  if(howlong<=17) return;
-  howlong-=(uint16_t) (17*1000000/F_CPU);
-  my_delay_loop_2((howlong*(uint16_t)(F_CPU/1000000))/4);
+	if(howlong < =17)
+		return;
+	howlong -= (uint16_t)(17 * 1000000 / F_CPU);
+	my_delay_loop_2((howlong * (uint16_t)(F_CPU / 1000000)) / 4);
 #else
-  howlong >> 5;
-  if (howlong < 1) return;
-  my_delay_loop_2(howlong);
+	howlong >> 5;
+	if (howlong  <  1)
+		return;
+	my_delay_loop_2(howlong);
 #endif
 }
-#if 0
-/*---------------------------------------------------------------------------*/
-/**
- * Legacy delay. The original clock_delay for the msp430 used a granularity
- * of 2.83 usec. This approximates that delay for values up to 1456 usec.
- * (The largest core call in leds.c uses 400).
- */
-void
-clock_delay(unsigned int howlong)
-{
-  if(howlong<2) return;
-  clock_delay_usec((45*howlong)>>4);
-}
-#endif
+
 /*---------------------------------------------------------------------------*/
 /**
  * Delay up to 65535 milliseconds.
@@ -260,20 +326,37 @@ void
 clock_delay_msec(uint16_t howlong)
 {
 
-#if F_CPU>=16000000
-  while(howlong--) clock_delay_usec(1000);
-#elif F_CPU>=8000000
-  uint16_t i=996;
-  while(howlong--) {clock_delay_usec(i);i=999;}
-#elif F_CPU>=4000000
-  uint16_t i=992;
-  while(howlong--) {clock_delay_usec(i);i=999;}
-#elif F_CPU>=2000000
-  uint16_t i=989;
-  while(howlong--) {clock_delay_usec(i);i=999;}
+#if F_CPU >= 16000000
+	while(howlong--)
+		clock_delay_usec(1000);
+#elif F_CPU >= 8000000
+	uint16_t i = 996;
+
+	while(howlong--) {
+		clock_delay_usec(i);
+		i=999;
+	}
+#elif F_CPU >= 4000000
+	uint16_t i=992;
+
+	while(howlong--) {
+		clock_delay_usec(i);
+		i=999;
+	}
+#elif F_CPU >= 2000000
+	uint16_t i=989;
+
+	while(howlong--) {
+		clock_delay_usec(i);
+		i=999;
+	}
 #else
-  uint16_t i=983;
-  while(howlong--) {clock_delay_usec(i);i=999;}
+	uint16_t i=983;
+
+	while(howlong--) {
+		clock_delay_usec(i);
+		i=999;
+	}
 #endif
 }
 /*---------------------------------------------------------------------------*/
@@ -288,23 +371,26 @@ clock_delay_msec(uint16_t howlong)
 void
 clock_adjust_ticks(clock_time_t howmany)
 {
-  uint8_t sreg = SREG;cli();
-  count  += howmany;
+  uint8_t sreg = SREG;
+
+	cli();
+	count += howmany;
 #if TWO_COUNTERS
-  howmany+= scount;
+	howmany += scount;
 #endif
-  while(howmany >= CLOCK_SECOND) {
-    howmany -= CLOCK_SECOND;
-    seconds++;
-    sleepseconds++;
+	while(howmany >= CLOCK_SECOND) {
+		howmany -= CLOCK_SECOND;
+		seconds++;
+		sleepseconds++;
 #if RADIOSTATS
-    if (RF230_receive_on) radioontime += 1;
+		if (RF230_receive_on)
+			radioontime += 1;
 #endif
-  }
+	}
 #if TWO_COUNTERS
-  scount = howmany;
+	scount = howmany;
 #endif
-  SREG=sreg;
+	SREG = sreg;
 }
 /*---------------------------------------------------------------------------*/
 /* This it the timer comparison match interrupt.
@@ -325,90 +411,37 @@ void AVR_OUTPUT_COMPARE_INT(void);
 #else
 ISR(AVR_OUTPUT_COMPARE_INT)
 {
-    count++;
+	count++;
 #if TWO_COUNTERS
-  if(++scount >= CLOCK_SECOND) {
-    scount = 0;
+	if(++scount >= CLOCK_SECOND) {
+		scount = 0;
 #else
-  if(count%CLOCK_SECOND==0) {
+	if(count % CLOCK_SECOND == 0) {
 #endif
-    seconds++;
+		seconds++;
 
 #if RADIO_CONF_CALIBRATE_INTERVAL
-   /* Force a radio PLL frequency calibration every 256 seconds */
-    if (++calibrate_interval==0) {
-      rf230_calibrate=1;
-    }
+		/* Force a radio PLL frequency calibration every 256 seconds */
+		if (++calibrate_interval == 0) {
+			rf230_calibrate = 1;
+		}
 #endif
-
-  }
+	}
 
 #if RADIOSTATS
-   /* Sample radio on time. Less accurate than ENERGEST but a smaller footprint */
-  if (RF230_receive_on) {
-    if (++rcount >= CLOCK_SECOND) {
-      rcount=0;
-      radioontime++;
-    }
-  }
+	/* Sample radio on time. Less accurate than ENERGEST but a smaller footprint */
+	if (RF230_receive_on) {
+		if (++rcount >= CLOCK_SECOND) {
+			rcount=0;
+			radioontime++;
+		}
+	}
 #endif
  
-#if F_CPU == 0x800000 && USE_32K_CRYSTAL
-/* Special routine to phase lock CPU to 32768 watch crystal.
- * We are interrupting 128 times per second.
- * If RTIMER_ARCH_SECOND is a multiple of 128 we can use the residual modulo
- * 128 to determine whether the clock is too fast or too slow.
- * E.g. for 8192 the phase should be constant modulo 0x40
- * OSCCAL is started in the lower range at 90, allowed to stabilize, then
- * rapidly raised or lowered based on the phase comparison.
- * It gives less phase noise to do this every tick and doesn't seem to hurt anything.
- */
-#include "rtimer-arch.h"
-{
-volatile static uint8_t lockcount;
-volatile static int16_t last_phase;
-volatile static uint8_t osccalhigh,osccallow;
-  if (seconds < 60) { //give a minute to stabilize
-    if(++lockcount >= 8192UL*128/RTIMER_ARCH_SECOND) {
-      lockcount=0;
-      rtimer_phase = TCNT3 & 0x0fff;
-      if (seconds < 2) OSCCAL=100;
-      if (last_phase > rtimer_phase) osccalhigh=++OSCCAL; else osccallow=--OSCCAL;
-      last_phase = rtimer_phase;
-    }
-  } else {
-    uint8_t error = (TCNT3 - last_phase) & 0x3f;
-    if (error == 0) {
-    } else if (error<32) {
-      OSCCAL=osccallow-1;
-    } else {
-      OSCCAL=osccalhigh+1;
-    }
-  }
-}
-#endif
-
-#if 1
-/*  gcc will save all registers on the stack if an external routine is called */
-  if(etimer_pending()) {
-    etimer_request_poll();
-  }
-#else
-/* doing this locally saves 9 pushes and 9 pops, but these etimer.c and process.c variables have to lose the static qualifier */
-  extern struct etimer *timerlist;
-  extern volatile unsigned char poll_requested;
-
-#define PROCESS_STATE_NONE        0
-#define PROCESS_STATE_RUNNING     1
-#define PROCESS_STATE_CALLED      2
-
-  if (timerlist) {
-    if(etimer_process.state == PROCESS_STATE_RUNNING || etimer_process.state == PROCESS_STATE_CALLED) {
-      etimer_process.needspoll = 1;
-      poll_requested = 1;
-    }
-  }
-#endif
+	/*  gcc will save all registers on the stack if an external routine is called */
+	if(etimer_pending()) {
+		etimer_request_poll();
+	}
 }
 #endif /* defined(DOXYGEN) */
 /*---------------------------------------------------------------------------*/

@@ -61,8 +61,6 @@
    @{
 */
 
-//_____  I N C L U D E S ___________________________________________________
-
 #include "contiki.h"
 #include "config.h"
 #include "conf_usb.h"
@@ -72,15 +70,13 @@
 #include "usb_task.h"
 #include "rndis/rndis_protocol.h"
 #include "rndis/rndis_task.h"
+#include <avr/sleep.h>
 
 PROCESS(usb_process, "USB process");
 
 #ifndef  USE_USB_PADS_REGULATOR
-   #error "USE_USB_PADS_REGULATOR" should be defined as ENABLE or DISABLE in conf_usb.h file
+#error "USE_USB_PADS_REGULATOR" should be defined as ENABLE or DISABLE in conf_usb.h file
 #endif
-#include <avr/sleep.h>
-
-//_____ M A C R O S ________________________________________________________
 
 #ifndef LOG_STR_CODE
 #define LOG_STR_CODE(str)
@@ -90,8 +86,6 @@ U8 code log_id_change[]="Pin Id Change";
 #endif
 
 #define USB_EVENT 0x2F /* Contiki event number - I just made this one up?*/
-
-//_____ D E F I N I T I O N S ______________________________________________
 
 //!
 //! Public : U16 g_usb_event
@@ -104,7 +98,6 @@ U8 code log_id_change[]="Pin Id Change";
 //! Is_usb_event(x)
 //! Is_not_usb_event(x)
 volatile uint16_t g_usb_event=0;
-
 
 //!
 //! Public : (bit) usb_connected
@@ -122,19 +115,14 @@ bit   usb_connected;
 //!/
 extern U8    usb_configuration_nb;
 
-
-//_____ D E C L A R A T I O N S ____________________________________________
-
-
-
 /**
  *   \brief Spare function to handle sleep mode.
  */
 extern void suspend_action(void)
 {
-   Enable_interrupt();
-   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-   sleep_mode();
+	Enable_interrupt();
+	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+	sleep_mode();
 }
 
 /**
@@ -148,13 +136,13 @@ extern void suspend_action(void)
   */
 void usb_start_device (void)
 {
-   Pll_start_auto();
-   Wait_pll_ready();
-   Usb_unfreeze_clock();
-   Usb_enable_vbus_interrupt();
-   Usb_enable_reset_interrupt();
-   usb_init_device();         // configure the USB controller EP0
-   Usb_attach();
+	Pll_start_auto();
+	Wait_pll_ready();
+	Usb_unfreeze_clock();
+	Usb_enable_vbus_interrupt();
+	Usb_enable_reset_interrupt();
+	usb_init_device();         // configure the USB controller EP0
+	Usb_attach();
 }
 
 
@@ -168,20 +156,20 @@ static void pollhandler(void)
 {
 	/* Check for setup packets */	
 	Usb_select_endpoint(EP_CONTROL);
+
 	if (Is_usb_receive_setup()) {
-	  usb_process_request();
+		usb_process_request();
 	}
 
 	/* The previous call might have requested we send
-		out something to the RNDIS interrupt endpoint */
+	 * out something to the RNDIS interrupt endpoint */
 	if (schedule_interrupt) {
 		Usb_select_endpoint(INT_EP);
 
 		//Linux is a bunch of lies, and won't read
 		//the interrupt endpoint. Hence if this isn't ready just exit
 		//while(!Is_usb_write_enabled());
-
-		 if (Is_usb_write_enabled()) {
+		if (Is_usb_write_enabled()) {
 
 			// Only valid interrupt is:
 			//   0x00000001 0x00000000
@@ -206,6 +194,7 @@ static void pollhandler(void)
 	process_poll(&usb_process);
 
 }
+
 /**
   *  \brief USB Process
   *
@@ -216,62 +205,52 @@ static void pollhandler(void)
   */
 PROCESS_THREAD(usb_process, ev, data_proc)
 {
+	PROCESS_POLLHANDLER(pollhandler());
 
-PROCESS_POLLHANDLER(pollhandler());
+	PROCESS_BEGIN();
 
-PROCESS_BEGIN();
+	/*** USB initilization ***/
+#if (USE_USB_PADS_REGULATOR==ENABLE)  // Otherwise assume USB PADs regulator is not used
+	Usb_enable_regulator();
+#endif
 
-   
-   /*** USB initilization ***/
-
-   #if (USE_USB_PADS_REGULATOR==ENABLE)  // Otherwise assume USB PADs regulator is not used
-   Usb_enable_regulator();
-   #endif
-
-   Usb_force_device_mode();
+	Usb_force_device_mode();
 
 	/* Init USB controller */
-   Enable_interrupt();
-   Usb_disable();
-   Usb_enable();
-   Usb_select_device();
+	Enable_interrupt();
+	Usb_disable();
+	Usb_enable();
+	Usb_select_device();
 #if (USB_LOW_SPEED_DEVICE==ENABLE)
-   Usb_low_speed_mode();
+	Usb_low_speed_mode();
 #endif
-   Usb_enable_vbus_interrupt();
-   Enable_interrupt();
+	Usb_enable_vbus_interrupt();
+	Enable_interrupt();
 
-   
-   /* Ensure pollhandler is called to start it off */
-   process_poll(&usb_process);
+	/* Ensure pollhandler is called to start it off */
+	process_poll(&usb_process);
 
-
-   /*** Begin actual USB process ***/
-   while(1)
+	/*** Begin actual USB process ***/
+	while(1)
 	{
+		if (Is_usb_vbus_high()&& usb_connected==FALSE) {
+			usb_connected = TRUE;
+			usb_start_device();
+			Usb_vbus_on_action();
+		}
 
-  if (Is_usb_vbus_high()&& usb_connected==FALSE)
-   {
-      usb_connected = TRUE;
-      usb_start_device();
-      Usb_vbus_on_action();
-   }
+		if(Is_usb_event(EVT_USB_RESET)) {
+			Usb_ack_event(EVT_USB_RESET);
+			Usb_reset_endpoint(0);
+			usb_configuration_nb=0;
+		}
 
-   if(Is_usb_event(EVT_USB_RESET))
-   {
-      Usb_ack_event(EVT_USB_RESET);
-      Usb_reset_endpoint(0);
-      usb_configuration_nb=0;
-   }
+		PROCESS_WAIT_EVENT_UNTIL(ev == USB_EVENT);
+	}
 
-
-	PROCESS_WAIT_EVENT_UNTIL(ev == USB_EVENT);
-	}//while(1)
-
-PROCESS_END();
+	PROCESS_END();
 
 }
-
 
 //! @brief USB general interrupt subroutine
 //!
@@ -296,71 +275,66 @@ ISR(USB_GEN_vect)
 
 	process_post(&usb_process, USB_EVENT, NULL);
 
-  //- VBUS state detection
-   if (Is_usb_vbus_transition() && Is_usb_vbus_interrupt_enabled())
-   {
-      Usb_ack_vbus_transition();
-      if (Is_usb_vbus_high())
-      {
-         usb_connected = TRUE;
-         Usb_vbus_on_action();
-         Usb_send_event(EVT_USB_POWERED);
-			Usb_enable_reset_interrupt();
-         usb_start_device();
-			Usb_attach();
-      }
-      else
-      {
-         Usb_vbus_off_action();
-         usb_connected = FALSE;
-         usb_configuration_nb = 0;
-         Usb_send_event(EVT_USB_UNPOWERED);
-      }
-   }
-  // - Device start of frame received
-   if (Is_usb_sof() && Is_sof_interrupt_enabled())
-   {
-      Usb_ack_sof();
-      Usb_sof_action();
-   }
-  // - Device Suspend event (no more USB activity detected)
-   if (Is_usb_suspend() && Is_suspend_interrupt_enabled())
-   {
-      Usb_ack_suspend();
-      Usb_enable_wake_up_interrupt();
-      Usb_ack_wake_up();                 // clear wake up to detect next event
-      Usb_freeze_clock();
-      Usb_send_event(EVT_USB_SUSPEND);
-      Usb_suspend_action();
-   }
-  // - Wake up event (USB activity detected): Used to resume
-   if (Is_usb_wake_up() && Is_swake_up_interrupt_enabled())
-   {
-      Usb_unfreeze_clock();
-      Usb_ack_wake_up();
-      Usb_disable_wake_up_interrupt();
-      Usb_wake_up_action();
-      Usb_send_event(EVT_USB_WAKE_UP);
-   }
-  // - Resume state bus detection
-   if (Is_usb_resume() && Is_resume_interrupt_enabled())
-   {
-      Usb_disable_wake_up_interrupt();
-      Usb_ack_resume();
-      Usb_disable_resume_interrupt();
-      Usb_resume_action();
-      Usb_send_event(EVT_USB_RESUME);
-   }
-  // - USB bus reset detection
-   if (Is_usb_reset()&& Is_reset_interrupt_enabled())
-   {
-      Usb_ack_reset();
-      usb_init_device();
-      Usb_reset_action();
-      Usb_send_event(EVT_USB_RESET);
-   }
+	//- VBUS state detection
+	if (Is_usb_vbus_transition() && Is_usb_vbus_interrupt_enabled()) {
+		Usb_ack_vbus_transition();
 
+		if (Is_usb_vbus_high()) {
+			usb_connected = TRUE;
+			Usb_vbus_on_action();
+			Usb_send_event(EVT_USB_POWERED);
+			Usb_enable_reset_interrupt();
+			usb_start_device();
+			Usb_attach();
+		} else {
+			Usb_vbus_off_action();
+			usb_connected = FALSE;
+			usb_configuration_nb = 0;
+			Usb_send_event(EVT_USB_UNPOWERED);
+		}
+	}
+
+	// - Device start of frame received
+	if (Is_usb_sof() && Is_sof_interrupt_enabled()) {
+		Usb_ack_sof();
+		Usb_sof_action();
+	}
+
+	// - Device Suspend event (no more USB activity detected)
+	if (Is_usb_suspend() && Is_suspend_interrupt_enabled()) {
+		Usb_ack_suspend();
+		Usb_enable_wake_up_interrupt();
+		Usb_ack_wake_up(); // clear wake up to detect next event
+		Usb_freeze_clock();
+		Usb_send_event(EVT_USB_SUSPEND);
+		Usb_suspend_action();
+	}
+
+	// - Wake up event (USB activity detected): Used to resume
+	if (Is_usb_wake_up() && Is_swake_up_interrupt_enabled()) {
+		Usb_unfreeze_clock();
+		Usb_ack_wake_up();
+		Usb_disable_wake_up_interrupt();
+		Usb_wake_up_action();
+		Usb_send_event(EVT_USB_WAKE_UP);
+	}
+
+	// - Resume state bus detection
+	if (Is_usb_resume() && Is_resume_interrupt_enabled()) {
+		Usb_disable_wake_up_interrupt();
+		Usb_ack_resume();
+		Usb_disable_resume_interrupt();
+		Usb_resume_action();
+		Usb_send_event(EVT_USB_RESUME);
+	}
+
+	// - USB bus reset detection
+	if (Is_usb_reset()&& Is_reset_interrupt_enabled()) {
+		Usb_ack_reset();
+		usb_init_device();
+		Usb_reset_action();
+		Usb_send_event(EVT_USB_RESET);
+	}
 }
 
 /** @} */
-

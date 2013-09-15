@@ -57,9 +57,11 @@
 #ifdef RS232_CONF_PRINTF_BUFFER_LENGTH
 #define RS232_PRINTF_BUFFER_LENGTH RS232_CONF_PRINTF_BUFFER_LENGTH
 #else
+
 #if CONTIKI_TARGET_STK500
 #define RS232_PRINTF_BUFFER_LENGTH 64
 #endif
+
 #endif
 
 /* TX interrupts would allow non-blocking output up to the size of some RAM buffer.
@@ -83,7 +85,10 @@
 #define NUMPORTS RS232_CONF_NUMPORTS
 #endif
 
-#if defined (__AVR_ATmega128__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega128RFA1__)
+#if defined (__AVR_ATmega128__) ||	\
+	defined(__AVR_ATmega1284P__) ||	\
+	defined(__AVR_ATmega1281__) ||	\
+	defined(__AVR_ATmega128RFA1__)
 #ifndef NUMPORTS
 #define NUMPORTS 2
 #elif NUMPORTS > 2
@@ -217,33 +222,41 @@
 
 #if NUMPORTS > 0
 int (* input_handler_0)(unsigned char);
+
 ISR(D_USART0_RX_vect)
 {
-  unsigned char c;
-  c = D_UDR0;
-  if (input_handler_0 != NULL) input_handler_0(c);
+	unsigned char c;
+
+	c = D_UDR0;
+	if (input_handler_0 != NULL)
+		input_handler_0(c);
 }
+
 #if RS232_TX_INTERRUPTS
 volatile uint8_t txwait_0;
+
 ISR(D_USART0_TX_vect)
 {
-  txwait_0 = 0;
+	txwait_0 = 0;
 }
 #endif
 
 #if NUMPORTS > 1
 int (* input_handler_1)(unsigned char);
+
 ISR(D_USART1_RX_vect)
 {
-  unsigned char c;
-  c = D_UDR1;
-  if (input_handler_1 != NULL) input_handler_1(c);
+	unsigned char c;
+
+	c = D_UDR1;
+	if (input_handler_1 != NULL)
+		input_handler_1(c);
 }
 #if RS232_TX_INTERRUPTS
 volatile uint8_t txwait_1;
 ISR(USART1_TX_vect)
 {
-  txwait_1 = 0;
+	txwait_1 = 0;
 }
 #endif
 
@@ -251,72 +264,84 @@ ISR(USART1_TX_vect)
 int (* input_handler_2)(unsigned char);
 ISR(D_USART2_RX_vect)
 {
-  unsigned char c;
-  c = D_UDR2;
-  if (input_handler_2 != NULL) input_handler_2(c);
+	unsigned char c;
+
+	c = D_UDR2;
+	if (input_handler_2 != NULL)
+		input_handler_2(c);
 }
 #if RS232_TX_INTERRUPTS
 volatile uint8_t txwait_2;
 ISR(USART2_TX_vect)
 {
-  txwait_2= 0;
+	txwait_2= 0;
 }
 #endif
 #endif
 
 #endif
 #endif
+
 /*---------------------------------------------------------------------------*/
 void
 rs232_init (uint8_t port, uint8_t bd, uint8_t ffmt)
 {
 #if NUMPORTS > 0
- if (port == 0) {
-   D_UBRR0H = (uint8_t)(bd>>8);
-   D_UBRR0L = (uint8_t)bd;
+	if (port == 0) {
+		D_UBRR0H = (uint8_t)(bd >> 8);
+		D_UBRR0L = (uint8_t)bd;
 #if RS232_TX_INTERRUPTS
-   txwait_0 = 0;
-   D_UCSR0B =  USART_INTERRUPT_RX_COMPLETE | USART_INTERRUPT_TX_COMPLETE | \
-               USART_RECEIVER_ENABLE | USART_TRANSMITTER_ENABLE;
+		txwait_0 = 0;
+		D_UCSR0B =  USART_INTERRUPT_RX_COMPLETE | \
+				USART_INTERRUPT_TX_COMPLETE | \
+				USART_RECEIVER_ENABLE | \
+				USART_TRANSMITTER_ENABLE;
 #else
-   D_UCSR0B =  USART_INTERRUPT_RX_COMPLETE | \
-               USART_RECEIVER_ENABLE | USART_TRANSMITTER_ENABLE;
+		D_UCSR0B =  USART_INTERRUPT_RX_COMPLETE | \
+				USART_RECEIVER_ENABLE | \
+				USART_TRANSMITTER_ENABLE;
 #endif
-   D_UCSR0C = USART_UCSRC_SEL | ffmt;
-   input_handler_0 = NULL;
+		D_UCSR0C = USART_UCSRC_SEL | ffmt;
+		input_handler_0 = NULL;
 
 #if NUMPORTS > 1
- } else if (port == 1) {
-   D_UBRR1H = (uint8_t)(bd>>8);
-   D_UBRR1L = (uint8_t)bd;
+	} else if (port == 1) {
+		D_UBRR1H = (uint8_t)(bd>>8);
+		D_UBRR1L = (uint8_t)bd;
 #if RS232_TX_INTERRUPTS
-   txwait_1 = 0;
-   D_UCSR1B =  USART_INTERRUPT_RX_COMPLETE | USART_INTERRUPT_TX_COMPLETE | \
-               USART_RECEIVER_ENABLE | USART_TRANSMITTER_ENABLE;
+		txwait_1 = 0;
+		D_UCSR1B =  USART_INTERRUPT_RX_COMPLETE | \
+				USART_INTERRUPT_TX_COMPLETE | \
+				USART_RECEIVER_ENABLE | \
+				USART_TRANSMITTER_ENABLE;
 #else
-   D_UCSR1B =  USART_INTERRUPT_RX_COMPLETE | \
-               USART_RECEIVER_ENABLE | USART_TRANSMITTER_ENABLE;
+		D_UCSR1B =  USART_INTERRUPT_RX_COMPLETE | \
+				USART_RECEIVER_ENABLE | \
+				USART_TRANSMITTER_ENABLE;
 #endif
-   D_UCSR1C = USART_UCSRC_SEL | ffmt;
-   input_handler_1 = NULL;
+		D_UCSR1C = USART_UCSRC_SEL | ffmt;
+		input_handler_1 = NULL;
 
 #if NUMPORTS > 2
- } else if (port == 2) {
-   D_UBRR2H = (uint8_t)(bd>>8);
-   D_UBRR2L = (uint8_t)bd;
+	} else if (port == 2) {
+		D_UBRR2H = (uint8_t)(bd>>8);
+		D_UBRR2L = (uint8_t)bd;
 #if RS232_TX_INTERRUPTS
-   txwait_2 = 0;
-   D_UCSR2B =  USART_INTERRUPT_RX_COMPLETE | USART_INTERRUPT_TX_COMPLETE | \
-               USART_RECEIVER_ENABLE | USART_TRANSMITTER_ENABLE;
+		txwait_2 = 0;
+		D_UCSR2B =  USART_INTERRUPT_RX_COMPLETE | \
+				USART_INTERRUPT_TX_COMPLETE | \
+				USART_RECEIVER_ENABLE | \
+				USART_TRANSMITTER_ENABLE;
 #else
-   D_UCSR2B =  USART_INTERRUPT_RX_COMPLETE | \
-               USART_RECEIVER_ENABLE | USART_TRANSMITTER_ENABLE;
+		D_UCSR2B =  USART_INTERRUPT_RX_COMPLETE | \
+				USART_RECEIVER_ENABLE | \
+				USART_TRANSMITTER_ENABLE;
 #endif
-   D_UCSR2C = USART_UCSRC_SEL | ffmt;
-   input_handler_2 = NULL;
+		D_UCSR2C = USART_UCSRC_SEL | ffmt;
+		input_handler_2 = NULL;
 #endif
 #endif
- }
+	}
 #endif /* NUMPORTS > 0 */
 }
 
@@ -327,41 +352,41 @@ rs232_send(uint8_t port, unsigned char c)
 #if RS232_TX_INTERRUPTS
   /* Output character and block until it is transmitted */
 #if NUMPORTS > 0
-  if (port == 0 ) {
-    txwait_0 = 1;
-    D_UDR0 = c;
-    while (txwait_0);
+	if (port == 0 ) {
+		txwait_0 = 1;
+		D_UDR0 = c;
+		while (txwait_0);
 #if NUMPORTS > 1
-  } else if (port == 1) {
-    txwait_1 = 1;
-    D_UDR1 = c;
-    while (txwait_1);
+	} else if (port == 1) {
+		txwait_1 = 1;
+		D_UDR1 = c;
+		while (txwait_1);
 #if NUMPORTS > 2
-  } else if (port == 2) {
-    txwait_2 = 1;
-    D_UDR2 = c;
-    while (txwait_2);
+	} else if (port == 2) {
+		txwait_2 = 1;
+		D_UDR2 = c;
+		while (txwait_2);
 #endif
 #endif
-  }
+	}
 #endif
 #else /* RS232_TX_INTERRUPTS */
   /* Block until tx ready and output character */
 #if NUMPORTS > 0
-  if (port == 0 ) {
-    while (!(D_UCSR0A & D_UDRE0M));
-    D_UDR0 = c;
+	if (port == 0 ) {
+		while (!(D_UCSR0A & D_UDRE0M));
+		D_UDR0 = c;
 #if NUMPORTS > 1
-  } else if (port == 1) {
-    while (!(D_UCSR1A & D_UDRE1M));
-    D_UDR1 = c;
+	} else if (port == 1) {
+		while (!(D_UCSR1A & D_UDRE1M));
+		D_UDR1 = c;
 #if NUMPORTS > 2
-  } else if (port == 2) {
-    while (!(D_UCSR2A & D_UDRE2M));
-    D_UDR2 = c;
+	} else if (port == 2) {
+		while (!(D_UCSR2A & D_UDRE2M));
+		D_UDR2 = c;
 #endif
 #endif
-  }
+	}
 #endif
 #endif /* RS232_TX_INTERRUPTS */
 }
@@ -370,17 +395,17 @@ void
 rs232_set_input(uint8_t port, int (*f)(unsigned char))
 {
 #if NUMPORTS > 0
-  if (port == 0) {
-    input_handler_0 = f;
+	if (port == 0) {
+		input_handler_0 = f;
 #if NUMPORTS > 1
-  } else if (port == 1) {
-    input_handler_1 = f;
+	} else if (port == 1) {
+		input_handler_1 = f;
 #if NUMPORTS > 2
-  } else if (port == 2) {
-    input_handler_2 = f;
+	} else if (port == 2) {
+		input_handler_2 = f;
 #endif
 #endif
-  }
+	}
 #endif
 }
 
@@ -388,14 +413,18 @@ rs232_set_input(uint8_t port, int (*f)(unsigned char))
 void
 rs232_print(uint8_t port, char *buf)
 {
-  while(*buf) {
+	while(*buf) {
 #if ADD_CARRIAGE_RETURN_AFTER_NEWLINE
-    if(*buf=='\n') rs232_send(port, '\r');
-	if(*buf=='\r') buf++; else rs232_send(port, *buf++);
+	if(*buf=='\n')
+		rs232_send(port, '\r');
+	if(*buf=='\r')
+		buf++;
+	else
+		rs232_send(port, *buf++);
 #else
-    rs232_send(port, *buf++);
+	rs232_send(port, *buf++);
 #endif
-  }
+}
 }
 
 #if RS232_PRINTF_BUFFER_LENGTH
@@ -403,21 +432,21 @@ rs232_print(uint8_t port, char *buf)
 void
 rs232_printf(uint8_t port, const char *fmt, ...)
 {
-  va_list ap;
-  static char buf[RS232_PRINTF_BUFFER_LENGTH];
+	va_list ap;
+	static char buf[RS232_PRINTF_BUFFER_LENGTH];
 
-  va_start (ap, fmt);
-  vsnprintf (buf, RS232_PRINTF_BUFFER_LENGTH, fmt, ap);
-  va_end(ap);
+	va_start (ap, fmt);
+	vsnprintf (buf, RS232_PRINTF_BUFFER_LENGTH, fmt, ap);
+	va_end(ap);
 
-  rs232_print (port, buf);
+	rs232_print (port, buf);
 }
 #endif
 /*---------------------------------------------------------------------------*/
 void
 slip_arch_writeb(unsigned char c)
 {
-  rs232_send(SLIP_PORT, c);
+	rs232_send(SLIP_PORT, c);
 }
 /*---------------------------------------------------------------------------*/
 int rs232_stdout_putchar(char c, FILE *stream);
@@ -429,15 +458,17 @@ static FILE rs232_stdout = FDEV_SETUP_STREAM(rs232_stdout_putchar,
 int rs232_stdout_putchar(char c, FILE *stream)
 {
 #if ADD_CARRIAGE_RETURN_AFTER_NEWLINE
-  if(c=='\n') rs232_send(stdout_rs232_port, '\r');
-  if(c!='\r') rs232_send (stdout_rs232_port, c);
+	if(c == '\n')
+		rs232_send(stdout_rs232_port, '\r');
+	if(c != '\r')
+		rs232_send (stdout_rs232_port, c);
 #else
-  rs232_send (stdout_rs232_port, c);
+	rs232_send (stdout_rs232_port, c);
 #endif
-  return 0;
+	return 0;
 }
 /*---------------------------------------------------------------------------*/
 void rs232_redirect_stdout (uint8_t port) {
-  stdout_rs232_port = port;
-  stdout = &rs232_stdout;
+	stdout_rs232_port = port;
+	stdout = &rs232_stdout;
 }
