@@ -214,20 +214,6 @@ const uint8_t default_txpower PROGMEM = RF230_MAX_TX_POWER;
 const uint8_t default_txpower PROGMEM = 0;
 #endif
 
-#if JACKDAW_CONF_RANDOM_MAC
-#include "rng.h"
-static void generate_new_eui64(uint8_t eui64[8]) {
-	eui64[0] = 0x02;
-	eui64[1] = rng_get_uint8();
-	eui64[2] = rng_get_uint8();
-	eui64[3] = 0xFF;
-	eui64[4] = 0xFE;
-	eui64[5] = rng_get_uint8();
-	eui64[6] = rng_get_uint8();
-	eui64[7] = rng_get_uint8();
-}
-#endif /* JACKDAW_CONF_RANDOM_MAC */
-
 #if !JACKDAW_CONF_USE_SETTINGS
 /****************************No settings manager*****************************/
 /* If not using the settings manager, put the default values into EEMEM
@@ -265,22 +251,16 @@ uint8_t eemem_txpower EEMEM = 0;
 static uint8_t get_channel_from_eeprom() {
 	uint8_t x[2];
 
-	*(uint16_t *)x = eeprom_read_word ((uint16_t *)&eemem_channel);
+	*(uint16_t *)x = eeprom_read_word((uint16_t *)&eemem_channel);
 
-	if((uint8_t)x[0] != (uint8_t)~x[1]) {//~x[1] can promote comparison to 16 bit
+	if((uint8_t)x[0] != (uint8_t)~x[1]) {
 		/* Verification fails, rewrite everything */
 		uint8_t mac[8];
-#if JACKDAW_CONF_RANDOM_MAC
-		PRINTA("Generating random MAC address.\n");
-		generate_new_eui64(&mac);
-#else
-		{
-			uint8_t i;
+		uint8_t i;
 
-			for (i = 0; i < 8; i++)
-				mac[i] = pgm_read_byte_near(default_mac_address+i);
-		}
-#endif
+		for (i = 0; i < 8; i++)
+			mac[i] = pgm_read_byte_near(default_mac_address+i);
+
 		eeprom_write_block(&mac,  &eemem_mac_address, 8);
 		eeprom_write_word(&eemem_panid  , pgm_read_word_near(&default_panid));
 		eeprom_write_word(&eemem_panaddr, pgm_read_word_near(&default_panaddr));
@@ -324,6 +304,7 @@ static uint8_t get_channel_from_eeprom() {
 
 static bool get_eui64_from_eeprom(uint8_t macptr[8]) {
 	size_t size = 8;
+	uint8_t i;
 
 	if(settings_get(SETTINGS_KEY_EUI64,
 			0,
@@ -331,17 +312,9 @@ static bool get_eui64_from_eeprom(uint8_t macptr[8]) {
 		return true;
 	}
 
-#if JACKDAW_CONF_RANDOM_MAC
-	PRINTA("--Generating random MAC address.\n");
-	generate_new_eui64(macptr);
-#else
-	{
-		uint8_t i;
+	for (i = 0; i < 8; i++)
+		macptr[i] = pgm_read_byte_near(default_mac_address+i);
 
-		for (i = 0; i < 8; i++)
-			macptr[i] = pgm_read_byte_near(default_mac_address+i);
-	}
-#endif
 	settings_add(SETTINGS_KEY_EUI64, (unsigned char*)macptr, 8);
 	PRINTA("->Set EEPROM MAC address.\n");
 

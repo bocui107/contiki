@@ -467,23 +467,6 @@ void menu_process(char c)
 				PRINTF_P(PSTR("Bringing interface up\n\r"));
 				usb_eth_set_active(1);
 				break;
-#if JACKDAW_CONF_RANDOM_MAC
-			case 'T':
-				// Test "strong" random number generator of R Quattlebaum
-                // This can potentially reboot the stick!
-				PRINTF_P(PSTR("RNG Output: "));
-				{
-					uint8_t value = rng_get_uint8();
-					uint8_t i;
-					for(i=0;i<8;i++) {
-						uart_usb_putchar(((value>>(7-i))&1)?'1':'0');
-					}
-					PRINTF_P(PSTR("\n\r"));
-					uart_usb_flush();
-					watchdog_periodic();
-				}
-				break;
-#endif
 			case 's':
 				PRINTF_P(PSTR("Jackdaw now in sniffer mode\n\r"));
 				usbstick_mode.sendToRf = 0;
