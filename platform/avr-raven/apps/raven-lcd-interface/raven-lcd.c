@@ -70,6 +70,9 @@
 #include "httpd-cgi.h"
 #endif
 
+#include "net/uip-icmp6.h"
+#include "net/tcpip.h"
+
 #include "raven-lcd.h"
 
 #include <string.h>

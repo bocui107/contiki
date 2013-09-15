@@ -52,6 +52,8 @@
 #include "lib/petsciiconv.h"
 
 #include "sensors.h"
+#include "net/uip.h"
+#include "net/uip-ds6.h"
 
 #define DEBUGLOGIC 0        //See httpd.c, if 1 must also set it there!
 #if DEBUGLOGIC
@@ -368,7 +370,7 @@ make_routes(void *p)
     j++;
     numprinted += httpd_cgi_sprint_ip6(r->ipaddr, uip_appdata + numprinted);
     numprinted += httpd_snprintf((char *)uip_appdata+numprinted, uip_mss()-numprinted, httpd_cgi_rtes1, r->length);
-    numprinted += httpd_cgi_sprint_ip6(uip_ds6_route_nexthop(r), uip_appdata + numprinted);
+    numprinted += httpd_cgi_sprint_ip6(*uip_ds6_route_nexthop(r), uip_appdata + numprinted);
     if(r->state.lifetime < 3600) {
       numprinted += httpd_snprintf((char *)uip_appdata+numprinted, uip_mss()-numprinted, httpd_cgi_rtes2, r->state.lifetime);
     } else {
@@ -534,7 +536,7 @@ httpd_cgi_init(void)
 }
 /*---------------------------------------------------------------------------*/
 
-uint8_t httpd_cgi_sprint_ip6(uip_ip6addr_t addr, char * result)
+uint8_t httpd_cgi_sprint_ip6(uip_ipaddr_t addr, char * result)
         {
         unsigned char zerocnt = 0;
         unsigned char numprinted = 0;

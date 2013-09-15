@@ -14,5 +14,6 @@ UIP_CONF_IPV6=1
 #COFFEE_ADDRESS=0xnnnn //Override default coffee file system starting address
 CONTIKI = ../..
 
+CFLAGS=-DUIP_CONF_IPV6=1
 
 include $(CONTIKI)/Makefile.include
