@@ -52,23 +52,20 @@
 #ifndef PLL_DRV_H
 #define PLL_DRV_H
 
-//_____ I N C L U D E S ____________________________________________________
-
 /**
    @addtogroup usb
    @{
 */
-//_____ M A C R O S ________________________________________________________
 
    //! @defgroup PLL_macros PLL Macros
    //! These functions allow to control the PLL
    //! @{
-#define PLLx24 			( (0<<PLLP2) | (0<<PLLP1) | (0<<PLLP0) )
-#define PLLx12 			( (0<<PLLP2) | (0<<PLLP1) | (1<<PLLP0) )
-#define PLLx08 			( (0<<PLLP2) | (1<<PLLP1) | (0<<PLLP0) )
-#define PLLx06 			( (0<<PLLP2) | (1<<PLLP1) | (1<<PLLP0) )
-#define PLLx04 			( (1<<PLLP2) | (0<<PLLP1) | (0<<PLLP0) )
-#define PLLx03 			( (1<<PLLP2) | (0<<PLLP1) | (1<<PLLP0) )
+#define PLLx24 		( (0<<PLLP2) | (0<<PLLP1) | (0<<PLLP0) )
+#define PLLx12 		( (0<<PLLP2) | (0<<PLLP1) | (1<<PLLP0) )
+#define PLLx08 		( (0<<PLLP2) | (1<<PLLP1) | (0<<PLLP0) )
+#define PLLx06 		( (0<<PLLP2) | (1<<PLLP1) | (1<<PLLP0) )
+#define PLLx04 		( (1<<PLLP2) | (0<<PLLP1) | (0<<PLLP0) )
+#define PLLx03 		( (1<<PLLP2) | (0<<PLLP1) | (1<<PLLP0) )
 #define PLLx04_8        ( (1<<PLLP2) | (1<<PLLP1) | (0<<PLLP0) )
 #define PLLx02          ( (1<<PLLP2) | (1<<PLLP1) | (1<<PLLP0) )
 
@@ -92,9 +89,9 @@
       // Start the PLL in autofactor mode
       // regarding FOSC define
 #if   (FOSC==2000)
-      //! Start the PLL in autofactor mode
-      //! regarding FOSC define
-   #define Pll_start_auto()   Start_pll(PLLx24)
+//! Start the PLL in autofactor mode
+//! regarding FOSC define
+#define Pll_start_auto()   Start_pll(PLLx24)
 #elif (FOSC==4000)
    #define Pll_start_auto()   Start_pll(PLLx12)
 #elif (FOSC==6000)
@@ -119,5 +116,3 @@
 
 //! @}
 #endif  // PLL_DRV_H
-
-

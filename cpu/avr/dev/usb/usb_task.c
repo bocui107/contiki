@@ -7,8 +7,8 @@
  *      The USB task selects the correct USB task (usb_device task or usb_host task
  *      to be executed depending on the current mode available.
  *
- *      According to USB_DEVICE_FEATURE and USB_HOST_FEATURE value (located in conf_usb.h file)
- *      The usb_task can be configured to support USB DEVICE mode or USB Host mode or both
+ *      According to USB_DEVICE_FEATURE value (located in conf_usb.h file)
+ *      The usb_task can be configured to support USB Device mode or both
  *      for a dual role device application.
  *
  *      This module also contains the general USB interrupt subroutine. This subroutine is used
@@ -236,7 +236,6 @@ PROCESS_THREAD(usb_process, ev, data_proc)
 		if (Is_usb_vbus_high()&& usb_connected==FALSE) {
 			usb_connected = TRUE;
 			usb_start_device();
-			Usb_vbus_on_action();
 		}
 
 		if(Is_usb_event(EVT_USB_RESET)) {
@@ -281,13 +280,11 @@ ISR(USB_GEN_vect)
 
 		if (Is_usb_vbus_high()) {
 			usb_connected = TRUE;
-			Usb_vbus_on_action();
 			Usb_send_event(EVT_USB_POWERED);
 			Usb_enable_reset_interrupt();
 			usb_start_device();
 			Usb_attach();
 		} else {
-			Usb_vbus_off_action();
 			usb_connected = FALSE;
 			usb_configuration_nb = 0;
 			Usb_send_event(EVT_USB_UNPOWERED);
@@ -297,7 +294,6 @@ ISR(USB_GEN_vect)
 	// - Device start of frame received
 	if (Is_usb_sof() && Is_sof_interrupt_enabled()) {
 		Usb_ack_sof();
-		Usb_sof_action();
 	}
 
 	// - Device Suspend event (no more USB activity detected)
@@ -315,7 +311,6 @@ ISR(USB_GEN_vect)
 		Usb_unfreeze_clock();
 		Usb_ack_wake_up();
 		Usb_disable_wake_up_interrupt();
-		Usb_wake_up_action();
 		Usb_send_event(EVT_USB_WAKE_UP);
 	}
 
@@ -324,7 +319,6 @@ ISR(USB_GEN_vect)
 		Usb_disable_wake_up_interrupt();
 		Usb_ack_resume();
 		Usb_disable_resume_interrupt();
-		Usb_resume_action();
 		Usb_send_event(EVT_USB_RESUME);
 	}
 
@@ -332,7 +326,6 @@ ISR(USB_GEN_vect)
 	if (Is_usb_reset()&& Is_reset_interrupt_enabled()) {
 		Usb_ack_reset();
 		usb_init_device();
-		Usb_reset_action();
 		Usb_send_event(EVT_USB_RESET);
 	}
 }

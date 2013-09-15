@@ -37,18 +37,14 @@
 #include <avr/eeprom.h>
 #include <stdio.h>
 
-/*---------------------------------------------------------------------------*/
-void
-eeprom_write(eeprom_addr_t addr, unsigned char *buf, int size)
+void eeprom_write(eeprom_addr_t addr, unsigned char *buf, int size)
 {
-  while(!eeprom_is_ready());
-  eeprom_write_block(buf, (unsigned short *)addr, size);
+	while(!eeprom_is_ready());
+	eeprom_write_block(buf, (unsigned short *)addr, size);
 }
-/*---------------------------------------------------------------------------*/
-void
-eeprom_read(eeprom_addr_t addr, unsigned char *buf, int size)
+
+void eeprom_read(eeprom_addr_t addr, unsigned char *buf, int size)
 {
-  while(!eeprom_is_ready());
-  eeprom_read_block(buf, (unsigned short *)addr, size);
+	while(!eeprom_is_ready());
+	eeprom_read_block(buf, (unsigned short *)addr, size);
 }
-/*---------------------------------------------------------------------------*/

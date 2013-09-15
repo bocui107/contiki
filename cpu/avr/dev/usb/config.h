@@ -57,21 +57,15 @@
    @{
 */
 
-//_____ I N C L U D E S ____________________________________________________
-
-
 #include "compiler.h" //!< Compiler definitions
-
 #include "contiki-raven.h"
 
 #ifdef AVRGCC
-   #define __AVR_AT90USBxxx__
-   #include <avr/io.h>
+#define __AVR_AT90USBxxx__
+#include <avr/io.h>
 #else
-   #include "lib_mcu/mcu.h" //!< Register declaration
+#include "lib_mcu/mcu.h" //!< Register declaration
 #endif
-
-//#include "conf_scheduler.h" //!< Scheduler tasks declaration
 
 //! Enable or not the ADC usage
 #undef  USE_ADC

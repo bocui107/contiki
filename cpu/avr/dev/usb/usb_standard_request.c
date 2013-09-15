@@ -234,12 +234,7 @@ U8 configuration_number;
    while(!Is_usb_in_ready());
 
    usb_user_endpoint_init(usb_configuration_nb);  //!< endpoint configuration
-   Usb_set_configuration_action();
 }
-
-
-
-
 
 void usb_get_string_descriptor_sram(U8  string_type) {
 	U16 requested_length;
