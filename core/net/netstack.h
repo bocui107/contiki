@@ -105,13 +105,13 @@
  * The structure of a network driver in Contiki.
  */
 struct network_driver {
-  char *name;
+	char *name;
 
-  /** Initialize the network driver */
-  void (* init)(void);
+	/** Initialize the network driver */
+	void (* init)(void);
 
-  /** Callback for getting notified of incoming packet. */
-  void (* input)(void);
+	/** Callback for getting notified of incoming packet. */
+	void (* input)(void);
 };
 
 extern const struct network_driver NETSTACK_NETWORK;
