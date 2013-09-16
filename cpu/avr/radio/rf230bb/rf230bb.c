@@ -148,7 +148,6 @@ struct timestamp {
 #define FOOTER1_CORRELATION 0x7f
 
 /* Leave radio on when USB powered or for testing low power protocols */
-/* This allows DEBUGFLOW indication of packets received when the radio is "off" */
 #if JACKDAW
 #define RADIOALWAYSON 1
 #else
@@ -156,20 +155,19 @@ struct timestamp {
 #define RADIOSLEEPSWHENOFF 1
 #endif
 
-/* RS232 delays will cause 6lowpan fragment overruns! Use DEBUGFLOW instead. */
+/* RS232 delays will cause 6lowpan fragment overruns. */
 #define DEBUG 0
 #if DEBUG
 #define PRINTF(FORMAT,args...) printf_P(PSTR(FORMAT),##args)
-#define PRINTSHORT(FORMAT,args...) printf_P(PSTR(FORMAT),##args)
 #else
 #define PRINTF(...)
-#define PRINTSHORT(...)
 #endif
 
 /* See clock.c and httpd-cgi.c for RADIOSTATS code */
 #if AVR_WEBSERVER
 #define RADIOSTATS 1
 #endif
+
 #if RADIOSTATS
 uint16_t RF230_sendpackets, RF230_receivepackets, RF230_sendfail, RF230_receivefail;
 #endif
@@ -179,14 +177,6 @@ uint16_t RF230_sendpackets, RF230_receivepackets, RF230_sendfail, RF230_receivef
 /* The calibration is automatic when the radio turns on, so not needed when duty cycling */
 uint8_t rf230_calibrate;
 uint8_t rf230_calibrated; //for debugging, prints from main loop when calibration occurs
-#endif
-
-/* Track flow through mac, rdc and radio drivers, see contiki-raven-main.c for example of use */
-#if DEBUGFLOWSIZE
-extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
-#define DEBUGFLOW(c) if (debugflowsize<(DEBUGFLOWSIZE-1)) debugflow[debugflowsize++]=c
-#else
-#define DEBUGFLOW(c)
 #endif
 
 /* XXX hack: these will be made as Chameleon packet attributes */
@@ -324,7 +314,6 @@ radio_reset_state_machine(void)
 	 * TIME_NOCLK_TO_WAKE delay here?
 	 */
 	if (hal_get_slptr()) {
-		DEBUGFLOW('V');
 		hal_set_slptr_low();
 		delay_us(TIME_NOCLK_TO_WAKE);
 	}
@@ -341,7 +330,6 @@ static char rf230_isidle(void)
 	* if it could otherwise hang waiting for idle! */
 	if (hal_get_slptr()) {
 		if (RF230_receive_on)
-			DEBUGFLOW('-');
 		return 1;
 	} else {
 		radio_state = hal_subregister_read(SR_TRX_STATUS);
@@ -401,7 +389,6 @@ static radio_status_t radio_set_trx_state(uint8_t new_state)
 	}
 
 	if (hal_get_slptr()) {
-		DEBUGFLOW('W');
 		return RADIO_WRONG_STATE;
 	}
 
@@ -420,9 +407,6 @@ static radio_status_t radio_set_trx_state(uint8_t new_state)
 	/* TRX_OFF, RX_ON, PLL_ON, RX_AACK_ON, TX_ARET_ON. */
 	if(new_state == TRX_OFF){
 		if (hal_get_slptr())
-			DEBUGFLOW('K');
-		DEBUGFLOW('K');
-		DEBUGFLOW('A'+ hal_subregister_read(SR_TRX_STATUS));
 		radio_reset_state_machine(); /* Go to TRX_OFF from any state. */
 	} else {
 		/* It is not allowed to go from RX_AACK_ON or TX_AACK_ON and directly to */
@@ -458,10 +442,6 @@ static radio_status_t radio_set_trx_state(uint8_t new_state)
 			((new_state == RX_AACK_ON) && (current_state == BUSY_RX_AACK))) {
 			/* This is OK. */
 		} else {
-			DEBUGFLOW('N');
-			DEBUGFLOW('A'+ new_state);
-			DEBUGFLOW('A'+ radio_get_trx_state());
-			DEBUGFLOW('N');
 			return RADIO_TIMED_OUT;
 		}
 	}
@@ -517,7 +497,6 @@ static void radio_on(void)
 		sei();
 
 		if (hal_get_slptr() == 0)
-			DEBUGFLOW('$');
 
 		hal_set_slptr_low();
 		{
@@ -528,11 +507,6 @@ static void radio_on(void)
 				break;
 		}
 
-		if (i >= 10000) {
-			DEBUGFLOW('G');
-			DEBUGFLOW('g');
-			DEBUGFLOW('A'+ hal_subregister_read(SR_TRX_STATUS));}
-		}
 		SREG = sreg;
 	}
 #else
@@ -557,7 +531,6 @@ static void radio_off(void)
 {
 	RF230_receive_on = 0;
 	if (hal_get_slptr()) {
-		DEBUGFLOW('F');
 		return;
 	}
 
@@ -579,7 +552,6 @@ static void radio_off(void)
 	/* Force the device into TRX_OFF.
 	 * First make sure an interrupt did not initiate a sleep. */
 	if (hal_get_slptr()) {
-		DEBUGFLOW('?');
 		return;
 	}
 	radio_reset_state_machine();
@@ -599,7 +571,6 @@ static void set_txpower(uint8_t power)
 	}
 
 	if (hal_get_slptr()) {
-		DEBUGFLOW('f');
 		PRINTF("rf230_set_txpower:Sleeping");  //happens with cxmac
 	} else {
 		hal_subregister_write(SR_TX_PWR, power);
@@ -615,7 +586,6 @@ int rf230_init(void)
 {
 	uint8_t i;
 
-	DEBUGFLOW('i');
 	/* Wait in case VCC just applied */
 	delay_us(TIME_TO_ENTER_P_ON);
 	/* Initialize Hardware Abstraction Layer */
@@ -763,15 +733,9 @@ static int rf230_transmit(unsigned short payload_len)
 					break;
 			}
 
-			if (i >= 10000) {
-				DEBUGFLOW('G');
-				DEBUGFLOW('G');
-				DEBUGFLOW('A'+ hal_subregister_read(SR_TRX_STATUS));
-			}
 		}
 #else
 		hal_set_slptr_low();
-		DEBUGFLOW('j');
 		delay_us(2 * TIME_SLEEP_TO_TRX_OFF); //extra delay (2x) depends on board capacitance
 #endif
 
@@ -779,7 +743,6 @@ static int rf230_transmit(unsigned short payload_len)
 #if RADIO_CONF_CALIBRATE_INTERVAL
 		/* If nonzero, do periodic calibration. See clock.c */
 		if (rf230_calibrate) {
-			DEBUGFLOW('k');
 			hal_subregister_write(SR_PLL_CF_START,1);   //takes 80us max
 			hal_subregister_write(SR_PLL_DCU_START,1); //takes 6us, concurrently
 			rf230_calibrate=0;
@@ -798,10 +761,8 @@ static int rf230_transmit(unsigned short payload_len)
 	/* Prepare to transmit */
 #if RF230_CONF_FRAME_RETRIES
 	radio_set_trx_state(TX_ARET_ON);
-	DEBUGFLOW('t');
 #else
 	radio_set_trx_state(PLL_ON);
-	DEBUGFLOW('T');
 #endif
 
 	txpower = 0;
@@ -885,7 +846,6 @@ static int rf230_transmit(unsigned short payload_len)
 	ENERGEST_OFF(ENERGEST_TYPE_TRANSMIT);
 
 	if(RF230_receive_on) {
-		DEBUGFLOW('l');
 		ENERGEST_ON(ENERGEST_TYPE_LISTEN);
 		radio_on();
 	} else {
@@ -919,17 +879,14 @@ static int rf230_transmit(unsigned short payload_len)
 #endif
 
 	} else if (tx_result==3) {        //CSMA channel access failure
-		DEBUGFLOW('m');
 		RIMESTATS_ADD(contentiondrop);
 		PRINTF("rf230_transmit: Transmission never started\n");
 		tx_result = RADIO_TX_COLLISION;
 	} else if (tx_result==5) {        //Expected ACK, none received
-		DEBUGFLOW('n');
 		tx_result = RADIO_TX_NOACK;
 		PRINTF("rf230_transmit: ACK not received\n");
 		RIMESTATS_ADD(badackrx);		//ack was requested but not received
 	} else if (tx_result==7) {        //Invalid (Can't happen since waited for idle above?)
-		DEBUGFLOW('o');
 		tx_result = RADIO_TX_ERR;
 	}
 
@@ -952,7 +909,6 @@ rf230_prepare(const void *payload, unsigned short payload_len)
   ack_seqnum=*(((uint8_t *)payload)+2);
 #endif
 
-  DEBUGFLOW('p');
 
   RIMESTATS_ADD(tx);
 
@@ -1135,7 +1091,6 @@ int rf230_interrupt(void)
   /* Poll the receive process, unless the stack thinks the radio is off */
 #if RADIOALWAYSON
 	if (RF230_receive_on) {
-		DEBUGFLOW('+');
 #endif
 
 #if RF230_CONF_TIMESTAMPS
@@ -1159,7 +1114,6 @@ int rf230_interrupt(void)
 
 #if RADIOALWAYSON
 	} else {
-		DEBUGFLOW('-');
 		rxframe[rxframe_head].length = 0;
 	}
 #endif
@@ -1258,13 +1212,12 @@ static int rf230_read(void *buf, unsigned short bufsize)
 		return bufsize;
 	}
 #endif
-	/* The length includes the twp-byte checksum but not the LQI byte */
+	/* The length includes the two-byte checksum but not the LQI byte */
 	len = rxframe[rxframe_head].length;
 	if (len == 0) {
 #if RADIOALWAYSON && DEBUGFLOWSIZE
 		if (RF230_receive_on == 0) {
 			if (debugflow[debugflowsize - 1] != 'z')
-				DEBUGFLOW('z');
 		} //cxmac calls with radio off?
 #endif
 		return 0;
@@ -1282,21 +1235,18 @@ static int rf230_read(void *buf, unsigned short bufsize)
 
 	if(len > RF230_MAX_TX_FRAME_LENGTH) {
 		/* Oops, we must be out of sync. */
-		DEBUGFLOW('u');
 		flushrx();
 		RIMESTATS_ADD(badsynch);
 		return 0;
 	}
 
 	if(len <= AUX_LEN) {
-		DEBUGFLOW('s');
 		flushrx();
 		RIMESTATS_ADD(tooshort);
 		return 0;
 	}
 
 	if(len - AUX_LEN > bufsize) {
-		DEBUGFLOW('v');
 		flushrx();
 		RIMESTATS_ADD(toolong);
 		return 0;
@@ -1336,7 +1286,6 @@ static int rf230_read(void *buf, unsigned short bufsize)
 
 #if RF230_CONF_CHECKSUM
 	if(checksum != crc16_data(buf, len - AUX_LEN, 0)) {
-		DEBUGFLOW('w');
 	}
 #endif /* RF230_CONF_CHECKSUM */
 
@@ -1426,11 +1375,9 @@ rf230_cca(void)
    * or because a packet just started. */
   if(RF230_receive_on) {
     if (hal_get_slptr()) {  //should not be sleeping!
-	  DEBUGFLOW('<');
 	  goto busyexit;
 	} else {
       if (!rf230_isidle()) {
-        //DEBUGFLOW('2');
         goto busyexit;
       }
 	}
@@ -1508,7 +1455,6 @@ rf230_cca(void)
   delay_us(TIME_CCA);
   while ((cca & 0x80) == 0 ) {
     if (hal_get_slptr()) {
-        DEBUGFLOW('S');
         break;
     }
     cca=hal_register_read(RG_TRX_STATUS);
@@ -1520,12 +1466,9 @@ rf230_cca(void)
   if(radio_was_off) {
     rf230_off();
   }
-// if (cca & 0x40) {/*DEBUGFLOW('3')*/;} else {rf230_pending=1;DEBUGFLOW('4');}  
    if (cca & 0x40) {
-//   DEBUGFLOW('5');
 	 return 1;
    } else {
-//  DEBUGFLOW('6');
  busyexit:
 	 return 0;
    }
@@ -1537,7 +1480,6 @@ rf230_receiving_packet(void)
 	uint8_t radio_state;
 
 	if (hal_get_slptr()) {
-		DEBUGFLOW('=');
 	} else {  
 		radio_state = hal_subregister_read(SR_TRX_STATUS);
 		if ((radio_state==BUSY_RX) || (radio_state==BUSY_RX_AACK)) {
