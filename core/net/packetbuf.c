@@ -51,15 +51,19 @@
 struct packetbuf_attr packetbuf_attrs[PACKETBUF_NUM_ATTRS];
 struct packetbuf_addr packetbuf_addrs[PACKETBUF_NUM_ADDRS];
 
-
 static uint16_t buflen, bufptr;
 static uint8_t hdrptr;
 
 /* The declarations below ensure that the packet buffer is aligned on
-   an even 16-bit boundary. On some platforms (most notably the
-   msp430), having apotentially misaligned packet buffer may lead to
-   problems when accessing 16-bit values. */
+ * an even 16-bit boundary. On some platforms (most notably the
+ * msp430), having apotentially misaligned packet buffer may lead to
+ * problems when accessing 16-bit values.
+ */
 static uint16_t packetbuf_aligned[(PACKETBUF_SIZE + PACKETBUF_HDR_SIZE) / 2 + 1];
+/*
+ * 为什么(PACKETBUF_SIZE + PACKETBUF_HDR_SIZE) / 2呢, 因为该数组是16位, 也就是
+ * 数组的每个成员占2个字节, 因此除以2.
+ */
 static uint8_t *packetbuf = (uint8_t *)packetbuf_aligned;
 
 static uint8_t *packetbufptr;
@@ -72,243 +76,218 @@ static uint8_t *packetbufptr;
 #define PRINTF(...)
 #endif
 
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_clear(void)
+void packetbuf_clear(void)
 {
-  buflen = bufptr = 0;
-  hdrptr = PACKETBUF_HDR_SIZE;
+	buflen = bufptr = 0;
+	hdrptr = PACKETBUF_HDR_SIZE;
 
-  packetbufptr = &packetbuf[PACKETBUF_HDR_SIZE];
-  packetbuf_attr_clear();
+	packetbufptr = &packetbuf[PACKETBUF_HDR_SIZE];
+	packetbuf_attr_clear();
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_clear_hdr(void)
+
+void packetbuf_clear_hdr(void)
 {
-  hdrptr = PACKETBUF_HDR_SIZE;
+	hdrptr = PACKETBUF_HDR_SIZE;
 }
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_copyfrom(const void *from, uint16_t len)
+
+int packetbuf_copyfrom(const void *from, uint16_t len)
 {
-  uint16_t l;
+	uint16_t l;
 
-  packetbuf_clear();
-  l = len > PACKETBUF_SIZE? PACKETBUF_SIZE: len;
-  memcpy(packetbufptr, from, l);
-  buflen = l;
-  return l;
+	packetbuf_clear();
+	l = len > PACKETBUF_SIZE? PACKETBUF_SIZE: len;
+	memcpy(packetbufptr, from, l);
+	buflen = l;
+	return l;
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_compact(void)
+
+void packetbuf_compact(void)
 {
-  int i, len;
+	int i, len;
 
-  if(packetbuf_is_reference()) {
-    memcpy(&packetbuf[PACKETBUF_HDR_SIZE], packetbuf_reference_ptr(),
-	   packetbuf_datalen());
-  } else if(bufptr > 0) {
-    len = packetbuf_datalen() + PACKETBUF_HDR_SIZE;
-    for(i = PACKETBUF_HDR_SIZE; i < len; i++) {
-      packetbuf[i] = packetbuf[bufptr + i];
-    }
+	if(packetbuf_is_reference()) {
+		memcpy(&packetbuf[PACKETBUF_HDR_SIZE], packetbuf_reference_ptr(),
+		packetbuf_datalen());
+	} else if(bufptr > 0) {
+		len = packetbuf_datalen() + PACKETBUF_HDR_SIZE;
 
-    bufptr = 0;
-  }
+		for(i = PACKETBUF_HDR_SIZE; i < len; i++)
+			packetbuf[i] = packetbuf[bufptr + i];
+
+		bufptr = 0;
+	}
 }
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_copyto_hdr(uint8_t *to)
+
+int packetbuf_copyto_hdr(uint8_t *to)
 {
 #if DEBUG_LEVEL > 0
-  {
-    int i;
-    PRINTF("packetbuf_write_hdr: header:\n");
-    for(i = hdrptr; i < PACKETBUF_HDR_SIZE; ++i) {
-      PRINTF("0x%02x, ", packetbuf[i]);
-    }
-    PRINTF("\n");
-  }
+	int i;
+
+	PRINTF("packetbuf_write_hdr: header:\n");
+	for(i = hdrptr; i < PACKETBUF_HDR_SIZE; ++i)
+		PRINTF("0x%02x, ", packetbuf[i]);
+
+	PRINTF("\n");
 #endif /* DEBUG_LEVEL */
-  memcpy(to, packetbuf + hdrptr, PACKETBUF_HDR_SIZE - hdrptr);
-  return PACKETBUF_HDR_SIZE - hdrptr;
+	memcpy(to, packetbuf + hdrptr, PACKETBUF_HDR_SIZE - hdrptr);
+	return PACKETBUF_HDR_SIZE - hdrptr;
 }
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_copyto(void *to)
+
+int packetbuf_copyto(void *to)
 {
 #if DEBUG_LEVEL > 0
-  {
-    int i;
-    char buffer[1000];
-    char *bufferptr = buffer;
-    
-    bufferptr[0] = 0;
-    for(i = hdrptr; i < PACKETBUF_HDR_SIZE; ++i) {
-      bufferptr += sprintf(bufferptr, "0x%02x, ", packetbuf[i]);
-    }
-    PRINTF("packetbuf_write: header: %s\n", buffer);
-    bufferptr = buffer;
-    bufferptr[0] = 0;
-    for(i = bufptr; i < buflen + bufptr; ++i) {
-      bufferptr += sprintf(bufferptr, "0x%02x, ", packetbufptr[i]);
-    }
-    PRINTF("packetbuf_write: data: %s\n", buffer);
-  }
-#endif /* DEBUG_LEVEL */
-  if(PACKETBUF_HDR_SIZE - hdrptr + buflen > PACKETBUF_SIZE) {
-    /* Too large packet */
-    return 0;
-  }
-  memcpy(to, packetbuf + hdrptr, PACKETBUF_HDR_SIZE - hdrptr);
-  memcpy((uint8_t *)to + PACKETBUF_HDR_SIZE - hdrptr, packetbufptr + bufptr,
-	 buflen);
-  return PACKETBUF_HDR_SIZE - hdrptr + buflen;
-}
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_hdralloc(int size)
-{
-  if(hdrptr >= size && packetbuf_totlen() + size <= PACKETBUF_SIZE) {
-    hdrptr -= size;
-    return 1;
-  }
-  return 0;
-}
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_hdr_remove(int size)
-{
-  hdrptr += size;
-}
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_hdrreduce(int size)
-{
-  if(buflen < size) {
-    return 0;
-  }
+	int i;
+	char buffer[1000];
+	char *bufferptr = buffer;
 
-  bufptr += size;
-  buflen -= size;
-  return 1;
+	bufferptr[0] = 0;
+	for(i = hdrptr; i < PACKETBUF_HDR_SIZE; ++i)
+		bufferptr += sprintf(bufferptr, "0x%02x, ", packetbuf[i]);
+
+	PRINTF("packetbuf_write: header: %s\n", buffer);
+	bufferptr = buffer;
+	bufferptr[0] = 0;
+
+	for(i = bufptr; i < buflen + bufptr; ++i)
+		bufferptr += sprintf(bufferptr, "0x%02x, ", packetbufptr[i]);
+
+	PRINTF("packetbuf_write: data: %s\n", buffer);
+#endif /* DEBUG_LEVEL */
+	/* Too large packet */
+	if(PACKETBUF_HDR_SIZE - hdrptr + buflen > PACKETBUF_SIZE)
+		return 0;
+
+	memcpy(to, packetbuf + hdrptr, PACKETBUF_HDR_SIZE - hdrptr);
+	memcpy((uint8_t *)to + PACKETBUF_HDR_SIZE - hdrptr,
+	       packetbufptr + bufptr,
+	       buflen);
+	return PACKETBUF_HDR_SIZE - hdrptr + buflen;
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_set_datalen(uint16_t len)
+
+int packetbuf_hdralloc(int size)
 {
-  PRINTF("packetbuf_set_len: len %d\n", len);
-  buflen = len;
+	if(hdrptr >= size && packetbuf_totlen() + size <= PACKETBUF_SIZE) {
+		hdrptr -= size;
+		return 1;
+	}
+
+	return 0;
 }
-/*---------------------------------------------------------------------------*/
-void *
-packetbuf_dataptr(void)
+
+void packetbuf_hdr_remove(int size)
 {
-  return (void *)(&packetbuf[bufptr + PACKETBUF_HDR_SIZE]);
+	hdrptr += size;
 }
-/*---------------------------------------------------------------------------*/
-void *
-packetbuf_hdrptr(void)
+
+int packetbuf_hdrreduce(int size)
 {
-  return (void *)(&packetbuf[hdrptr]);
+	if(buflen < size)
+		return 0;
+
+	bufptr += size;
+	buflen -= size;
+
+	return 1;
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_reference(void *ptr, uint16_t len)
+
+void packetbuf_set_datalen(uint16_t len)
 {
-  packetbuf_clear();
-  packetbufptr = ptr;
-  buflen = len;
+	PRINTF("packetbuf_set_len: len %d\n", len);
+	buflen = len;
 }
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_is_reference(void)
+
+void * packetbuf_dataptr(void)
 {
-  return packetbufptr != &packetbuf[PACKETBUF_HDR_SIZE];
+	return (void *)(&packetbuf[bufptr + PACKETBUF_HDR_SIZE]);
 }
-/*---------------------------------------------------------------------------*/
-void *
-packetbuf_reference_ptr(void)
+
+void * packetbuf_hdrptr(void)
 {
-  return packetbufptr;
+	return (void *)(&packetbuf[hdrptr]);
 }
-/*---------------------------------------------------------------------------*/
-uint16_t
-packetbuf_datalen(void)
+
+void packetbuf_reference(void *ptr, uint16_t len)
 {
-  return buflen;
+	packetbuf_clear();
+	packetbufptr = ptr;
+	buflen = len;
 }
-/*---------------------------------------------------------------------------*/
-uint8_t
-packetbuf_hdrlen(void)
+
+int packetbuf_is_reference(void)
 {
-  return PACKETBUF_HDR_SIZE - hdrptr;
+	return packetbufptr != &packetbuf[PACKETBUF_HDR_SIZE];
 }
-/*---------------------------------------------------------------------------*/
-uint16_t
-packetbuf_totlen(void)
+
+void * packetbuf_reference_ptr(void)
 {
-  return packetbuf_hdrlen() + packetbuf_datalen();
+	return packetbufptr;
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_attr_clear(void)
+
+uint16_t packetbuf_datalen(void)
 {
-  int i;
-  for(i = 0; i < PACKETBUF_NUM_ATTRS; ++i) {
-    packetbuf_attrs[i].val = 0;
-  }
-  for(i = 0; i < PACKETBUF_NUM_ADDRS; ++i) {
-    rimeaddr_copy(&packetbuf_addrs[i].addr, &rimeaddr_null);
-  }
+	return buflen;
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_attr_copyto(struct packetbuf_attr *attrs,
+
+uint8_t packetbuf_hdrlen(void)
+{
+	return PACKETBUF_HDR_SIZE - hdrptr;
+}
+
+uint16_t packetbuf_totlen(void)
+{
+	return packetbuf_hdrlen() + packetbuf_datalen();
+}
+
+void packetbuf_attr_clear(void)
+{
+	int i;
+
+	for(i = 0; i < PACKETBUF_NUM_ATTRS; ++i) {
+		packetbuf_attrs[i].val = 0;
+	}
+
+	for(i = 0; i < PACKETBUF_NUM_ADDRS; ++i) {
+		rimeaddr_copy(&packetbuf_addrs[i].addr, &rimeaddr_null);
+	}
+}
+
+void packetbuf_attr_copyto(struct packetbuf_attr *attrs,
 		    struct packetbuf_addr *addrs)
 {
-  memcpy(attrs, packetbuf_attrs, sizeof(packetbuf_attrs));
-  memcpy(addrs, packetbuf_addrs, sizeof(packetbuf_addrs));
+	memcpy(attrs, packetbuf_attrs, sizeof(packetbuf_attrs));
+	memcpy(addrs, packetbuf_addrs, sizeof(packetbuf_addrs));
 }
-/*---------------------------------------------------------------------------*/
-void
-packetbuf_attr_copyfrom(struct packetbuf_attr *attrs,
+
+void packetbuf_attr_copyfrom(struct packetbuf_attr *attrs,
 		      struct packetbuf_addr *addrs)
 {
-  memcpy(packetbuf_attrs, attrs, sizeof(packetbuf_attrs));
-  memcpy(packetbuf_addrs, addrs, sizeof(packetbuf_addrs));
+	memcpy(packetbuf_attrs, attrs, sizeof(packetbuf_attrs));
+	memcpy(packetbuf_addrs, addrs, sizeof(packetbuf_addrs));
 }
-/*---------------------------------------------------------------------------*/
+
 #if !PACKETBUF_CONF_ATTRS_INLINE
-int
-packetbuf_set_attr(uint8_t type, const packetbuf_attr_t val)
+int packetbuf_set_attr(uint8_t type, const packetbuf_attr_t val)
 {
-/*   packetbuf_attrs[type].type = type; */
-  packetbuf_attrs[type].val = val;
-  return 1;
+	/* packetbuf_attrs[type].type = type; */
+	packetbuf_attrs[type].val = val;
+	return 1;
 }
-/*---------------------------------------------------------------------------*/
-packetbuf_attr_t
-packetbuf_attr(uint8_t type)
+
+packetbuf_attr_t packetbuf_attr(uint8_t type)
 {
-  return packetbuf_attrs[type].val;
+	return packetbuf_attrs[type].val;
 }
-/*---------------------------------------------------------------------------*/
-int
-packetbuf_set_addr(uint8_t type, const rimeaddr_t *addr)
+
+int packetbuf_set_addr(uint8_t type, const rimeaddr_t *addr)
 {
-/*   packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].type = type; */
-  rimeaddr_copy(&packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr, addr);
-  return 1;
+	/* packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].type = type; */
+	rimeaddr_copy(&packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr, addr);
+	return 1;
 }
-/*---------------------------------------------------------------------------*/
-const rimeaddr_t *
-packetbuf_addr(uint8_t type)
+
+const rimeaddr_t * packetbuf_addr(uint8_t type)
 {
-  return &packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr;
+	return &packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr;
 }
-/*---------------------------------------------------------------------------*/
 #endif /* PACKETBUF_CONF_ATTRS_INLINE */
 /** @} */

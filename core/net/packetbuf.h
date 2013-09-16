@@ -318,59 +318,60 @@ int packetbuf_hdrreduce(int size);
 typedef uint16_t packetbuf_attr_t;
 
 struct packetbuf_attr {
-/*   uint8_t type; */
-  packetbuf_attr_t val;
-};
-struct packetbuf_addr {
-/*   uint8_t type; */
-  rimeaddr_t addr;
+	/* uint8_t type; */
+	packetbuf_attr_t val;
 };
 
-#define PACKETBUF_ATTR_PACKET_TYPE_DATA      0
-#define PACKETBUF_ATTR_PACKET_TYPE_ACK       1
-#define PACKETBUF_ATTR_PACKET_TYPE_STREAM    2
-#define PACKETBUF_ATTR_PACKET_TYPE_STREAM_END 3
-#define PACKETBUF_ATTR_PACKET_TYPE_TIMESTAMP 4
+struct packetbuf_addr {
+	/* uint8_t type; */
+	rimeaddr_t addr;
+};
+
+#define PACKETBUF_ATTR_PACKET_TYPE_DATA		0
+#define PACKETBUF_ATTR_PACKET_TYPE_ACK		1
+#define PACKETBUF_ATTR_PACKET_TYPE_STREAM	2
+#define PACKETBUF_ATTR_PACKET_TYPE_STREAM_END	3
+#define PACKETBUF_ATTR_PACKET_TYPE_TIMESTAMP	4
 
 enum {
-  PACKETBUF_ATTR_NONE,
+	PACKETBUF_ATTR_NONE,
 
-  /* Scope 0 attributes: used only on the local node. */
-  PACKETBUF_ATTR_CHANNEL,
-  PACKETBUF_ATTR_NETWORK_ID,
-  PACKETBUF_ATTR_LINK_QUALITY,
-  PACKETBUF_ATTR_RSSI,
-  PACKETBUF_ATTR_TIMESTAMP,
-  PACKETBUF_ATTR_RADIO_TXPOWER,
-  PACKETBUF_ATTR_LISTEN_TIME,
-  PACKETBUF_ATTR_TRANSMIT_TIME,
-  PACKETBUF_ATTR_MAX_MAC_TRANSMISSIONS,
-  PACKETBUF_ATTR_MAC_SEQNO,
-  PACKETBUF_ATTR_MAC_ACK,
+	/* Scope 0 attributes: used only on the local node. */
+	PACKETBUF_ATTR_CHANNEL,
+	PACKETBUF_ATTR_NETWORK_ID,
+	PACKETBUF_ATTR_LINK_QUALITY,
+	PACKETBUF_ATTR_RSSI,
+	PACKETBUF_ATTR_TIMESTAMP,
+	PACKETBUF_ATTR_RADIO_TXPOWER,
+	PACKETBUF_ATTR_LISTEN_TIME,
+	PACKETBUF_ATTR_TRANSMIT_TIME,
+	PACKETBUF_ATTR_MAX_MAC_TRANSMISSIONS,
+	PACKETBUF_ATTR_MAC_SEQNO,
+	PACKETBUF_ATTR_MAC_ACK,
 
-  /* Scope 1 attributes: used between two neighbors only. */
-  PACKETBUF_ATTR_RELIABLE,
-  PACKETBUF_ATTR_PACKET_ID,
-  PACKETBUF_ATTR_PACKET_TYPE,
-  PACKETBUF_ATTR_REXMIT,
-  PACKETBUF_ATTR_MAX_REXMIT,
-  PACKETBUF_ATTR_NUM_REXMIT,
-  PACKETBUF_ATTR_PENDING,
-  
-  /* Scope 2 attributes: used between end-to-end nodes. */
-  PACKETBUF_ATTR_HOPS,
-  PACKETBUF_ATTR_TTL,
-  PACKETBUF_ATTR_EPACKET_ID,
-  PACKETBUF_ATTR_EPACKET_TYPE,
-  PACKETBUF_ATTR_ERELIABLE,
+	/* Scope 1 attributes: used between two neighbors only. */
+	PACKETBUF_ATTR_RELIABLE,
+	PACKETBUF_ATTR_PACKET_ID,
+	PACKETBUF_ATTR_PACKET_TYPE,
+	PACKETBUF_ATTR_REXMIT,
+	PACKETBUF_ATTR_MAX_REXMIT,
+	PACKETBUF_ATTR_NUM_REXMIT,
+	PACKETBUF_ATTR_PENDING,
 
-  /* These must be last */
-  PACKETBUF_ADDR_SENDER,
-  PACKETBUF_ADDR_RECEIVER,
-  PACKETBUF_ADDR_ESENDER,
-  PACKETBUF_ADDR_ERECEIVER,
-  
-  PACKETBUF_ATTR_MAX
+	/* Scope 2 attributes: used between end-to-end nodes. */
+	PACKETBUF_ATTR_HOPS,
+	PACKETBUF_ATTR_TTL,
+	PACKETBUF_ATTR_EPACKET_ID,
+	PACKETBUF_ATTR_EPACKET_TYPE,
+	PACKETBUF_ATTR_ERELIABLE,
+
+	/* These must be last */
+	PACKETBUF_ADDR_SENDER,
+	PACKETBUF_ADDR_RECEIVER,
+	PACKETBUF_ADDR_ESENDER,
+	PACKETBUF_ADDR_ERECEIVER,
+
+	PACKETBUF_ATTR_MAX
 };
 
 #define PACKETBUF_NUM_ADDRS 4
@@ -392,41 +393,41 @@ static const rimeaddr_t *packetbuf_addr(uint8_t type);
 static inline int
 packetbuf_set_attr(uint8_t type, const packetbuf_attr_t val)
 {
-/*   packetbuf_attrs[type].type = type; */
-  packetbuf_attrs[type].val = val;
-  return 1;
+	/* packetbuf_attrs[type].type = type; */
+	packetbuf_attrs[type].val = val;
+	return 1;
 }
+
 static inline packetbuf_attr_t
 packetbuf_attr(uint8_t type)
 {
-  return packetbuf_attrs[type].val;
+	return packetbuf_attrs[type].val;
 }
 
 static inline int
 packetbuf_set_addr(uint8_t type, const rimeaddr_t *addr)
 {
-/*   packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].type = type; */
-  rimeaddr_copy(&packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr, addr);
-  return 1;
+	/* packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].type = type; */
+	rimeaddr_copy(&packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr, addr);
+	return 1;
 }
 
 static inline const rimeaddr_t *
 packetbuf_addr(uint8_t type)
 {
-  return &packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr;
+	return &packetbuf_addrs[type - PACKETBUF_ADDR_FIRST].addr;
 }
 #else /* PACKETBUF_CONF_ATTRS_INLINE */
-int               packetbuf_set_attr(uint8_t type, const packetbuf_attr_t val);
+int packetbuf_set_attr(uint8_t type, const packetbuf_attr_t val);
 packetbuf_attr_t packetbuf_attr(uint8_t type);
-int               packetbuf_set_addr(uint8_t type, const rimeaddr_t *addr);
+int packetbuf_set_addr(uint8_t type, const rimeaddr_t *addr);
 const rimeaddr_t *packetbuf_addr(uint8_t type);
 #endif /* PACKETBUF_CONF_ATTRS_INLINE */
 
-void              packetbuf_attr_clear(void);
-
-void              packetbuf_attr_copyto(struct packetbuf_attr *attrs,
-				      struct packetbuf_addr *addrs);
-void              packetbuf_attr_copyfrom(struct packetbuf_attr *attrs,
+void packetbuf_attr_clear(void);
+void packetbuf_attr_copyto(struct packetbuf_attr *attrs,
+           	      struct packetbuf_addr *addrs);
+void packetbuf_attr_copyfrom(struct packetbuf_attr *attrs,
 					struct packetbuf_addr *addrs);
 
 #define PACKETBUF_ATTRIBUTES(...) { __VA_ARGS__ PACKETBUF_ATTR_LAST }
@@ -437,8 +438,8 @@ void              packetbuf_attr_copyfrom(struct packetbuf_attr *attrs,
 #define PACKETBUF_ADDRSIZE (sizeof(rimeaddr_t) * PACKETBUF_ATTR_BYTE)
 
 struct packetbuf_attrlist {
-  uint8_t type;
-  uint8_t len;
+	uint8_t type;
+	uint8_t len;
 };
 
 #endif /* __PACKETBUF_H__ */

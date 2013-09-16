@@ -52,11 +52,19 @@
 #include "lib/random.h"
 
 #define DEBUG 0
-
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
-#define PRINTADDR(addr) PRINTF(" %02x%02x:%02x%02x:%02x%02x:%02x%02x ", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7])
+#define PRINTADDR(addr)	\
+	PRINTF(" %02x%02x:%02x%02x:%02x%02x:%02x%02x ",	\
+		((uint8_t *)addr)[0],	\
+		((uint8_t *)addr)[1],	\
+		((uint8_t *)addr)[2],	\
+		((uint8_t *)addr)[3],	\
+		((uint8_t *)addr)[4],	\
+		((uint8_t *)addr)[5],	\
+		((uint8_t *)addr)[6],	\
+		((uint8_t *)addr)[7])
 #else
 #define PRINTF(...)
 #define PRINTADDR(addr)
@@ -90,91 +98,91 @@ static int is_broadcast_addr(uint8_t mode, uint8_t *addr)
 	}
 	return 1;
 }
-/*---------------------------------------------------------------------------*/
-static void
-send_packet(mac_callback_t sent, void *ptr)
+
+static void send_packet(mac_callback_t sent, void *ptr)
 {
-  frame802154_t params;
-  uint8_t len;
+	frame802154_t params;
+	uint8_t len;
 
-  /* init to zeros */
-  memset(&params, 0, sizeof(params));
+	/* init to zeros */
+	memset(&params, 0, sizeof(params));
 
-  /* Build the FCF. */
-  params.fcf.frame_type = FRAME802154_DATAFRAME;
-  params.fcf.security_enabled = 0;
-  params.fcf.frame_pending = 0;
-  params.fcf.ack_required = packetbuf_attr(PACKETBUF_ATTR_RELIABLE);
-  params.fcf.panid_compression = 0;
+	/* Build the FCF. */
+	params.fcf.frame_type = FRAME802154_DATAFRAME;
+	params.fcf.security_enabled = 0;
+	params.fcf.frame_pending = 0;
+	params.fcf.ack_required = packetbuf_attr(PACKETBUF_ATTR_RELIABLE);
+	params.fcf.panid_compression = 0;
 
-  /* Insert IEEE 802.15.4 (2003) version bit. */
-  params.fcf.frame_version = FRAME802154_IEEE802154_2003;
+	/* Insert IEEE 802.15.4 (2003) version bit. */
+	params.fcf.frame_version = FRAME802154_IEEE802154_2003;
 
-  /* Increment and set the data sequence number. */
-  params.seq = mac_dsn++;
+	/* Increment and set the data sequence number. */
+	params.seq = mac_dsn++;
 
-  /* Complete the addressing fields. */
-  /**
-     \todo For phase 1 the addresses are all long. We'll need a mechanism
-     in the rime attributes to tell the mac to use long or short for phase 2.
-  */
-  params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
-  params.dest_pid = mac_dst_pan_id;
+	/* Complete the addressing fields. */
+	/**
+	 * \todo For phase 1 the addresses are all long. We'll need a mechanism
+	 * in the rime attributes to tell the mac to use long or short for phase 2.
+	 */
+	params.fcf.src_addr_mode = FRAME802154_LONGADDRMODE;
+	params.dest_pid = mac_dst_pan_id;
 
-  /*
-   *  If the output address is NULL in the Rime buf, then it is broadcast
-   *  on the 802.15.4 network.
-   */
-  if(rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_RECEIVER), &rimeaddr_null)) {
-    /* Broadcast requires short address mode. */
-    params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
-    params.dest_addr[0] = 0xFF;
-    params.dest_addr[1] = 0xFF;
+	/*
+	 *  If the output address is NULL in the Rime buf, then it is broadcast
+	 *  on the 802.15.4 network.
+	 */
+	if(rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_RECEIVER), &rimeaddr_null)) {
+		/* Broadcast requires short address mode. */
+		params.fcf.dest_addr_mode = FRAME802154_SHORTADDRMODE;
+		params.dest_addr[0] = 0xFF;
+		params.dest_addr[1] = 0xFF;
+	} else {
+		rimeaddr_copy((rimeaddr_t *)&params.dest_addr,
+			  packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
+		params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
+	}
 
-  } else {
-    rimeaddr_copy((rimeaddr_t *)&params.dest_addr,
-                  packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
-    params.fcf.dest_addr_mode = FRAME802154_LONGADDRMODE;
-  }
+	/* Set the source PAN ID to the global variable. */
+	params.src_pid = mac_src_pan_id;
 
-  /* Set the source PAN ID to the global variable. */
-  params.src_pid = mac_src_pan_id;
-
-  /*
-   * Set up the source address using only the long address mode for
-   * phase 1.
-   */
+	/*
+	 * Set up the source address using only the long address mode for
+	 * phase 1.
+	 */
 #if NETSTACK_CONF_BRIDGE_MODE
-  rimeaddr_copy((rimeaddr_t *)&params.src_addr,packetbuf_addr(PACKETBUF_ADDR_SENDER));
+	rimeaddr_copy((rimeaddr_t *)&params.src_addr,packetbuf_addr(PACKETBUF_ADDR_SENDER));
 #else
-  rimeaddr_copy((rimeaddr_t *)&params.src_addr, &rimeaddr_node_addr);
+	rimeaddr_copy((rimeaddr_t *)&params.src_addr, &rimeaddr_node_addr);
 #endif
 
-  params.payload = packetbuf_dataptr();
-  params.payload_len = packetbuf_datalen();
-  len = frame802154_hdrlen(&params);
-  if(packetbuf_hdralloc(len)) {
-    int ret;
-    frame802154_create(&params, packetbuf_hdrptr(), len);
+	params.payload = packetbuf_dataptr();
+	params.payload_len = packetbuf_datalen();
+	len = frame802154_hdrlen(&params);
 
-    PRINTF("6MAC-UT: %2X", params.fcf.frame_type);
-    PRINTADDR(params.dest_addr.u8);
-    PRINTF("%u %u (%u)\n", len, packetbuf_datalen(), packetbuf_totlen());
+	if(packetbuf_hdralloc(len)) {
+		int ret;
 
-    ret = NETSTACK_RADIO.send(packetbuf_hdrptr(), packetbuf_totlen());
-    if(sent) {
-      switch(ret) {
-      case RADIO_TX_OK:
-        sent(ptr, MAC_TX_OK, 1);
-        break;
-      case RADIO_TX_ERR:
-        sent(ptr, MAC_TX_ERR, 1);
-        break;
-      }
-    }
-  } else {
-    PRINTF("6MAC-UT: too large header: %u\n", len);
-  }
+		frame802154_create(&params, packetbuf_hdrptr(), len);
+
+		PRINTF("6MAC-UT: %2X", params.fcf.frame_type);
+		PRINTADDR(params.dest_addr.u8);
+		PRINTF("%u %u (%u)\n", len, packetbuf_datalen(), packetbuf_totlen());
+
+		ret = NETSTACK_RADIO.send(packetbuf_hdrptr(), packetbuf_totlen());
+		if(sent) {
+			switch(ret) {
+			case RADIO_TX_OK:
+				sent(ptr, MAC_TX_OK, 1);
+				break;
+			case RADIO_TX_ERR:
+				sent(ptr, MAC_TX_ERR, 1);
+				break;
+			}
+		}
+	} else {
+		PRINTF("6MAC-UT: too large header: %u\n", len);
+	}
 }
 
 void send_list(mac_callback_t sent, void *ptr, struct rdc_buf_list *buf_list)

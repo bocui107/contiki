@@ -423,18 +423,18 @@ static void initialize(void) {
 
 #if ANNOUNCE
 	PRINTA("MAC address %x:%x:%x:%x:%x:%x:%x:%x\n\r",
-				tmp_addr.u8[0],
-				tmp_addr.u8[1],
-				tmp_addr.u8[2],
-				tmp_addr.u8[3],
-				tmp_addr.u8[4],
-				tmp_addr.u8[5],
-				tmp_addr.u8[6],
-				tmp_addr.u8[7]);
+			tmp_addr.u8[0],
+			tmp_addr.u8[1],
+			tmp_addr.u8[2],
+			tmp_addr.u8[3],
+			tmp_addr.u8[4],
+			tmp_addr.u8[5],
+			tmp_addr.u8[6],
+			tmp_addr.u8[7]);
 	PRINTA("%s %s, channel %u",
-				NETSTACK_MAC.name,
-				NETSTACK_RDC.name,
-				rf230_get_channel());
+			NETSTACK_MAC.name,
+			NETSTACK_RDC.name,
+			rf230_get_channel());
 	if (NETSTACK_RDC.channel_check_interval) {
 		unsigned short tmp;
 		tmp = CLOCK_SECOND / (NETSTACK_RDC.channel_check_interval == 0 ?

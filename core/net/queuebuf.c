@@ -288,25 +288,25 @@ queuebuf_load_to_ram(struct queuebuf *b)
   return b->ram_ptr;
 }
 #endif /* WITH_SWAP */
-/*---------------------------------------------------------------------------*/
-void
-queuebuf_init(void)
+
+void queuebuf_init(void)
 {
 #if WITH_SWAP
-  int i;
-  for(i=0; i<NQBUF_FILES; i++) {
-    qbuf_files[i].renewable = 1;
-    qbuf_renew_file(i);
-  }
+	int i;
+
+	for(i = 0; i < NQBUF_FILES; i++) {
+		qbuf_files[i].renewable = 1;
+		qbuf_renew_file(i);
+	}
 #endif
-  memb_init(&buframmem);
-  memb_init(&bufmem);
-  memb_init(&refbufmem);
+	memb_init(&buframmem);
+	memb_init(&bufmem);
+	memb_init(&refbufmem);
 #if QUEUEBUF_STATS
-  queuebuf_max_len = QUEUEBUF_NUM;
+	queuebuf_max_len = QUEUEBUF_NUM;
 #endif /* QUEUEBUF_STATS */
 }
-/*---------------------------------------------------------------------------*/
+
 #if QUEUEBUF_DEBUG
 struct queuebuf *
 queuebuf_new_from_packetbuf_debug(const char *file, int line)

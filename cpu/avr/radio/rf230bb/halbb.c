@@ -67,10 +67,7 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #define DEBUGFLOW(c)
 #endif
 
-
-/*============================ INCLUDE =======================================*/
 #include <stdlib.h>
-
 #include "hal.h"
 
 #if defined(__AVR_ATmega128RFA1__)
@@ -80,25 +77,17 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #include "at86rf230_registermap.h"
 #endif
 
-/*============================ VARIABLES =====================================*/
-
-volatile extern signed char rf230_last_rssi;
-
-/*============================ CALLBACKS =====================================*/
-
-
-/*============================ IMPLEMENTATION ================================*/
 #if defined(__AVR_ATmega128RFA1__)
-
 /* AVR1281 with internal RF231 radio */
 #include <avr/interrupt.h>
-
 #elif defined(__AVR__)
 /*
  * AVR with hardware SPI tranfers (TODO: move to hw spi hal for avr cpu)
  */
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
+volatile extern signed char rf230_last_rssi;
 
 #define HAL_SPI_TRANSFER_OPEN() { \
   HAL_ENTER_CRITICAL_REGION();	  \
@@ -178,8 +167,6 @@ hal_init(void)
 
     /*IO Specific Initialization - sleep and reset pins. */
     /* Set pins low before they are initialized as output? Does not seem to matter */
-//  hal_set_rst_low();
-//  hal_set_slptr_low();
     DDR_SLP_TR |= (1 << SLP_TR); /* Enable SLP_TR as output. */
     DDR_RST    |= (1 << RST);    /* Enable RST as output. */
 
@@ -225,7 +212,6 @@ hal_init(void)
     HAL_PORT_SCK &= ~(1 << HAL_SCK_PIN); // SCLK.clr()
 
     /*TIMER Specific Initialization.*/
-    // Init count source (Timer B3)
     TB3 = ((16*10) - 1); // 16 us ticks
     TB3MR.BYTE = 0b00000000; // Timer mode, F1
     TBSR.BIT.TB3S = 1; // Start Timer B3
@@ -240,7 +226,6 @@ hal_init(void)
     hal_enable_trx_interrupt();
 }
 #endif  /* !__AVR__ */
-
 
 #if defined(__AVR_ATmega128RFA1__)
 /* Hack for internal radio registers. hal_register_read and hal_register_write are
@@ -544,70 +529,6 @@ hal_frame_write(uint8_t *write_buffer, uint8_t length)
 }
 
 /*----------------------------------------------------------------------------*/
-/** \brief Read SRAM
- *
- * This function reads from the SRAM of the radio transceiver.
- *
- * \param address Address in the TRX's SRAM where the read burst should start
- * \param length Length of the read burst
- * \param data Pointer to buffer where data is stored.
- */
-#if 0  //Uses 80 bytes (on Raven) omit unless needed
-void
-hal_sram_read(uint8_t address, uint8_t length, uint8_t *data)
-{
-    HAL_SPI_TRANSFER_OPEN();
-
-    /*Send SRAM read command and address to start*/
-    HAL_SPI_TRANSFER(0x00);
-    HAL_SPI_TRANSFER(address);
-
-    HAL_SPI_TRANSFER_WRITE(0);
-    HAL_SPI_TRANSFER_WAIT();
-
-    /*Upload the chosen memory area.*/
-    do{
-        *data++ = HAL_SPI_TRANSFER_READ();
-        HAL_SPI_TRANSFER_WRITE(0);
-        HAL_SPI_TRANSFER_WAIT();
-    } while (--length > 0);
-
-    HAL_SPI_TRANSFER_CLOSE();
-}
-#endif
-/*----------------------------------------------------------------------------*/
-/** \brief Write SRAM
- *
- * This function writes into the SRAM of the radio transceiver. It can reduce
- * SPI transfers if only part of a frame is to be changed before retransmission.
- *
- * \param address Address in the TRX's SRAM where the write burst should start
- * \param length  Length of the write burst
- * \param data    Pointer to an array of bytes that should be written
- */
-#if 0  //omit unless needed
-void
-hal_sram_write(uint8_t address, uint8_t length, uint8_t *data)
-{
-    HAL_SPI_TRANSFER_OPEN();
-
-    /*Send SRAM write command.*/
-    HAL_SPI_TRANSFER(0x40);
-
-    /*Send address where to start writing to.*/
-    HAL_SPI_TRANSFER(address);
-
-    /*Upload the chosen memory area.*/
-    do{
-        HAL_SPI_TRANSFER(*data++);
-    } while (--length > 0);
-
-    HAL_SPI_TRANSFER_CLOSE();
-
-}
-#endif
-
-/*----------------------------------------------------------------------------*/
 /* This #if compile switch is used to provide a "standard" function body for the */
 /* doxygen documentation. */
 #if defined(DOXYGEN)
@@ -655,7 +576,6 @@ ISR(TRX24_RX_END_vect)
 #else
 	if (1) {
 #endif
-//		DEBUGFLOW('2');
 		hal_frame_read(&rxframe[rxframe_tail]);
 		rxframe_tail++;if (rxframe_tail >= RF230_CONF_RX_BUFFERS) rxframe_tail=0;
 		rf230_interrupt();
@@ -664,7 +584,6 @@ ISR(TRX24_RX_END_vect)
 /* Preamble detected, starting frame reception */
 ISR(TRX24_RX_START_vect)
 {
-//	DEBUGFLOW('3');
 /* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
 #if !RF230_CONF_AUTOACK
     rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
@@ -675,7 +594,6 @@ ISR(TRX24_RX_START_vect)
 /* PLL has locked, either from a transition out of TRX_OFF or a channel change while on */
 ISR(TRX24_PLL_LOCK_vect)
 {
-//	DEBUGFLOW('4');
 }
 
 /* PLL has unexpectedly unlocked */
@@ -689,21 +607,18 @@ extern volatile uint8_t rf230_wakewait, rf230_txendwait,rf230_ccawait;
 /* Wake has finished */
 ISR(TRX24_AWAKE_vect)
 {
-//	DEBUGFLOW('6');
   rf230_wakewait=0;
 }
 
 /* Transmission has ended */
 ISR(TRX24_TX_END_vect)
 {
-//	DEBUGFLOW('7');
   rf230_txendwait=0;
 }
 
 /* Frame address has matched ours */
 ISR(TRX24_XAH_AMI_vect)
 {
-//	DEBUGFLOW('8');
 }
 
 /* CCAED measurement has completed */
@@ -717,93 +632,95 @@ ISR(TRX24_CCA_ED_DONE_vect)
 /* Separate RF230 has a single radio interrupt and the source must be read from the IRQ_STATUS register */
 HAL_RF230_ISR()
 {
-    volatile uint8_t state;
-    uint8_t interrupt_source; /* used after HAL_SPI_TRANSFER_OPEN/CLOSE block */
+	volatile uint8_t state;
+	uint8_t interrupt_source; /* used after HAL_SPI_TRANSFER_OPEN/CLOSE block */
 
-    INTERRUPTDEBUG(1);
+	/* Using SPI bus from ISR is generally a bad idea... */
+	/* Note: all IRQ are not always automatically disabled when running in ISR */
+	HAL_SPI_TRANSFER_OPEN();
 
-    
-    /* Using SPI bus from ISR is generally a bad idea... */
-    /* Note: all IRQ are not always automatically disabled when running in ISR */
-    HAL_SPI_TRANSFER_OPEN();
+	/*Read Interrupt source.*/
+	/*Send Register address and read register content.*/
+	HAL_SPI_TRANSFER_WRITE(0x80 | RG_IRQ_STATUS);
 
-    /*Read Interrupt source.*/
-    /*Send Register address and read register content.*/
-    HAL_SPI_TRANSFER_WRITE(0x80 | RG_IRQ_STATUS);
+	HAL_SPI_TRANSFER_WAIT(); /* AFTER possible interleaved processing */
 
-    HAL_SPI_TRANSFER_WAIT(); /* AFTER possible interleaved processing */
+	interrupt_source = HAL_SPI_TRANSFER(0);
 
-    interrupt_source = HAL_SPI_TRANSFER(0);
+	HAL_SPI_TRANSFER_CLOSE();
 
-    HAL_SPI_TRANSFER_CLOSE();
-
-    /*Handle the incomming interrupt. Prioritized.*/
-    if ((interrupt_source & HAL_RX_START_MASK)){
-	   INTERRUPTDEBUG(10);
-    /* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
+	/*Handle the incomming interrupt. Prioritized.*/
+	if ((interrupt_source & HAL_RX_START_MASK)){
+		INTERRUPTDEBUG(10);
+		/* Save RSSI for this packet if not in extended mode, scaling to 1dB resolution */
 #if !RF230_CONF_AUTOACK
-#if 0  // 3-clock shift and add is faster on machines with no hardware multiply
-       // With -Os avr-gcc saves a byte by using the general routine for multiply by 3
-        rf230_last_rssi = hal_subregister_read(SR_RSSI);
-        rf230_last_rssi = (rf230_last_rssi <<1)  + rf230_last_rssi;
-#else  // Faster with 1-clock multiply. Raven and Jackdaw have 2-clock multiply so same speed while saving 2 bytes of program memory
-        rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
+		// 3-clock shift and add is faster on machines with no hardware multiply
+		// With -Os avr-gcc saves a byte by using the general routine for multiply by 3
+		rf230_last_rssi = 3 * hal_subregister_read(SR_RSSI);
 #endif
-#endif
-
-    } else if (interrupt_source & HAL_TRX_END_MASK){
-	   INTERRUPTDEBUG(11);	    	    
+	} else if (interrupt_source & HAL_TRX_END_MASK){
+		INTERRUPTDEBUG(11);	    	    
         
-       state = hal_subregister_read(SR_TRX_STATUS);
-       if((state == BUSY_RX_AACK) || (state == RX_ON) || (state == BUSY_RX) || (state == RX_AACK_ON)){
-         /* Received packet interrupt */
-         /* Buffer the frame and call rf230_interrupt to schedule poll for rf230 receive process */
-         if (rxframe[rxframe_tail].length) INTERRUPTDEBUG(42); else INTERRUPTDEBUG(12);
- 
+		state = hal_subregister_read(SR_TRX_STATUS);
+		if((state == BUSY_RX_AACK) || \
+			(state == RX_ON) || \
+			(state == BUSY_RX) || \
+			(state == RX_AACK_ON)){
+			/* Received packet interrupt */
+			/*
+			 * Buffer the frame and call rf230_interrupt
+			 * to schedule poll for rf230 receive process
+			 */
+			if (rxframe[rxframe_tail].length)
+				INTERRUPTDEBUG(42);
+			else
+				INTERRUPTDEBUG(12);
+	 
 #ifdef RF230_MIN_RX_POWER		 
          /* Discard packets weaker than the minimum if defined. This is for testing miniature meshes.*/
          /* Save the rssi for printing in the main loop */
 #if RF230_CONF_AUTOACK
-         //rf230_last_rssi=hal_subregister_read(SR_ED_LEVEL);
-         rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
+			rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
 #endif
-         if (rf230_last_rssi >= RF230_MIN_RX_POWER) {
+			if (rf230_last_rssi >= RF230_MIN_RX_POWER) {
 #endif
-           hal_frame_read(&rxframe[rxframe_tail]);
-           rxframe_tail++;if (rxframe_tail >= RF230_CONF_RX_BUFFERS) rxframe_tail=0;
-           rf230_interrupt();
-#ifdef RF230_MIN_RX_POWER
-         }
-#endif
+				hal_frame_read(&rxframe[rxframe_tail]);
+				rxframe_tail++;
 
-       }
-              
-    } else if (interrupt_source & HAL_TRX_UR_MASK){
-        INTERRUPTDEBUG(13);
-        ;
-    } else if (interrupt_source & HAL_PLL_UNLOCK_MASK){
-        INTERRUPTDEBUG(14);
-	    ;
-    } else if (interrupt_source & HAL_PLL_LOCK_MASK){
-        INTERRUPTDEBUG(15);
-        ;
-    } else if (interrupt_source & HAL_BAT_LOW_MASK){
-        /*  Disable BAT_LOW interrupt to prevent endless interrupts. The interrupt */
-        /*  will continously be asserted while the supply voltage is less than the */
-        /*  user-defined voltage threshold. */
-        uint8_t trx_isr_mask = hal_register_read(RG_IRQ_MASK);
-        trx_isr_mask &= ~HAL_BAT_LOW_MASK;
-        hal_register_write(RG_IRQ_MASK, trx_isr_mask);
-        INTERRUPTDEBUG(16);
-        ;
-     } else {
-        INTERRUPTDEBUG(99);
-	    ;
-    }
+				if (rxframe_tail >= RF230_CONF_RX_BUFFERS)
+					rxframe_tail=0;
+
+				rf230_interrupt();
+#ifdef RF230_MIN_RX_POWER
+			}
+#endif
+		}
+	} else if (interrupt_source & HAL_TRX_UR_MASK){
+		INTERRUPTDEBUG(13);
+		;
+	} else if (interrupt_source & HAL_PLL_UNLOCK_MASK){
+		INTERRUPTDEBUG(14);
+		;
+	} else if (interrupt_source & HAL_PLL_LOCK_MASK){
+		INTERRUPTDEBUG(15);
+		;
+	} else if (interrupt_source & HAL_BAT_LOW_MASK){
+		/*  Disable BAT_LOW interrupt to prevent endless interrupts. The interrupt */
+		/*  will continously be asserted while the supply voltage is less than the */
+		/*  user-defined voltage threshold. */
+		uint8_t trx_isr_mask = hal_register_read(RG_IRQ_MASK);
+
+		trx_isr_mask &= ~HAL_BAT_LOW_MASK;
+		hal_register_write(RG_IRQ_MASK, trx_isr_mask);
+		INTERRUPTDEBUG(16);
+		;
+	} else {
+		INTERRUPTDEBUG(99);
+		;
+	}
 }
 #endif /* defined(__AVR_ATmega128RFA1__) */ 
-#   endif /* defined(DOXYGEN) */
-
+#endif /* defined(DOXYGEN) */
 /** @} */
 /** @} */
 
