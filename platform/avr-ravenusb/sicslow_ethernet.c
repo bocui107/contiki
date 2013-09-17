@@ -248,8 +248,8 @@
 #define PRINTF(...)
 #endif
 
-#define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
-#define ETHBUF(x) ((struct uip_eth_hdr *)x)
+#define UIP_IP_BUF	((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
+#define ETHBUF(x)	((struct uip_eth_hdr *)x)
 
 //For little endian, such as our friend mr. AVR
 #ifndef LSB
@@ -296,32 +296,31 @@ uint8_t prefixCounter;
 uint8_t prefixBuffer[PREFIX_BUFFER_SIZE][3];
 
 /* 6lowpan max size + ethernet header size + 1 */
-uint8_t raw_buf[127+ UIP_LLH_LEN +1];
+uint8_t raw_buf[127 + UIP_LLH_LEN + 1];
 
 /**
  * \brief   Perform any setup needed
  */
 #if !RF230BB
- struct mac_driver * pmac;
+struct mac_driver * pmac;
 #endif
 void mac_ethernetSetup(void)
 {
-  usbstick_mode.sicslowpan = 1;
-  usbstick_mode.sendToRf = 1;
-  usbstick_mode.translate = 1;
-  usbstick_mode.debugOn= 1;
-  usbstick_mode.raw = 0;
-  usbstick_mode.sneeze=0;
+	usbstick_mode.sicslowpan = 1;
+	usbstick_mode.sendToRf = 1;
+	usbstick_mode.translate = 1;
+	usbstick_mode.debugOn= 1;
+	usbstick_mode.raw = 0;
+	usbstick_mode.sneeze=0;
 
 #if !RF230BB
-  sicslowinput = pinput;
+	sicslowinput = pinput;
 
-  pmac = sicslowmac_get_driver();
-  pmac->set_receive_function(mac_ethhijack);
-  sicslowmac_snifferhook = mac_ethhijack_nondata;
+	pmac = sicslowmac_get_driver();
+	pmac->set_receive_function(mac_ethhijack);
+	sicslowmac_snifferhook = mac_ethhijack_nondata;
 #endif
 }
-
 
 /**
  * \brief   Take a packet received over the ethernet link, and send it
@@ -467,7 +466,6 @@ void mac_ethernetToLowpan(uint8_t * ethHeader)
 
 }
 
-
 /**
  * \brief Take a packet received over the 802.15.4 link, and send it
  * out over ethernet, performing any translations needed.
@@ -475,78 +473,74 @@ void mac_ethernetToLowpan(uint8_t * ethHeader)
 void mac_LowpanToEthernet(void)
 {
 #if !RF230BB
-  parsed_frame = sicslowmac_get_frame();
+	parsed_frame = sicslowmac_get_frame();
 #endif
 
-  //Setup generic ethernet stuff
-  ETHBUF(uip_buf)->type = uip_htons(UIP_ETHTYPE_IPV6);
+	//Setup generic ethernet stuff
+	ETHBUF(uip_buf)->type = uip_htons(UIP_ETHTYPE_IPV6);
 
-  //Check for broadcast message
-  
+	//Check for broadcast message
 #if RF230BB
-  if(rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_RECEIVER), &rimeaddr_null)) {
-//  if(rimeaddr_cmp((const rimeaddr_t *)destAddr, &rimeaddr_null)) {
+	if(rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_RECEIVER), &rimeaddr_null)) {
 #else
-  if(  ( parsed_frame->fcf->destAddrMode == SHORTADDRMODE) &&
-       ( parsed_frame->dest_addr->addr16 == 0xffff) ) {
+	if((parsed_frame->fcf->destAddrMode == SHORTADDRMODE) &&
+			(parsed_frame->dest_addr->addr16 == 0xffff)) {
 #endif
-    ETHBUF(uip_buf)->dest.addr[0] = 0x33;
-    ETHBUF(uip_buf)->dest.addr[1] = 0x33;
+		ETHBUF(uip_buf)->dest.addr[0] = 0x33;
+		ETHBUF(uip_buf)->dest.addr[1] = 0x33;
 
 #if UIP_CONF_IPV6
-    ETHBUF(uip_buf)->dest.addr[2] = UIP_IP_BUF->destipaddr.u8[12];
-    ETHBUF(uip_buf)->dest.addr[3] = UIP_IP_BUF->destipaddr.u8[13];
-    ETHBUF(uip_buf)->dest.addr[4] = UIP_IP_BUF->destipaddr.u8[14];
-    ETHBUF(uip_buf)->dest.addr[5] = UIP_IP_BUF->destipaddr.u8[15];
+		ETHBUF(uip_buf)->dest.addr[2] = UIP_IP_BUF->destipaddr.u8[12];
+		ETHBUF(uip_buf)->dest.addr[3] = UIP_IP_BUF->destipaddr.u8[13];
+		ETHBUF(uip_buf)->dest.addr[4] = UIP_IP_BUF->destipaddr.u8[14];
+		ETHBUF(uip_buf)->dest.addr[5] = UIP_IP_BUF->destipaddr.u8[15];
 #else
-	//Not intended to be functional, but allows ip4 build without errors.
-    ETHBUF(uip_buf)->dest.addr[2] = UIP_IP_BUF->destipaddr.u8[0];
-    ETHBUF(uip_buf)->dest.addr[3] = UIP_IP_BUF->destipaddr.u8[1];
-    ETHBUF(uip_buf)->dest.addr[4] = UIP_IP_BUF->destipaddr.u8[2];
-    ETHBUF(uip_buf)->dest.addr[5] = UIP_IP_BUF->destipaddr.u8[3];
+		//Not intended to be functional, but allows ip4 build without errors.
+		ETHBUF(uip_buf)->dest.addr[2] = UIP_IP_BUF->destipaddr.u8[0];
+		ETHBUF(uip_buf)->dest.addr[3] = UIP_IP_BUF->destipaddr.u8[1];
+		ETHBUF(uip_buf)->dest.addr[4] = UIP_IP_BUF->destipaddr.u8[2];
+		ETHBUF(uip_buf)->dest.addr[5] = UIP_IP_BUF->destipaddr.u8[3];
 #endif
-  } else {
-	//Otherwise we have a real address
-	mac_createEthernetAddr((uint8_t *) &(ETHBUF(uip_buf)->dest.addr[0]),
-                        (uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
-  }
+	} else {
+		//Otherwise we have a real address
+		mac_createEthernetAddr((uint8_t *) &(ETHBUF(uip_buf)->dest.addr[0]),
+				(uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_RECEIVER));
+	}
 
 #if !UIP_CONF_SIMPLE_JACKDAW_ADDR_TRANS
-  //Source ethernet depends on node
-  if(!mac_createEthernetAddr(
-    (uint8_t *) &(ETHBUF(uip_buf)->src.addr[0]),
-    (uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER)
-  ))
+	//Source ethernet depends on node
+	if(!mac_createEthernetAddr(
+		(uint8_t *) &(ETHBUF(uip_buf)->src.addr[0]),
+		(uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER)))
 #endif
+	{
+		mac_createDefaultEthernetAddr((uint8_t *) &(ETHBUF(uip_buf)->src.addr[0]));
+	}
 
-  {
-    mac_createDefaultEthernetAddr((uint8_t *) &(ETHBUF(uip_buf)->src.addr[0]));
-  }
+	//We only do address translation in network mode!
+	if (usbstick_mode.translate) {
+		//Some IP packets have link layer in them, need to change them around!
+		mac_translateIPLinkLayer(ll_8023_type);
+	}
 
-  //We only do address translation in network mode!
-  if (usbstick_mode.translate) {
-    //Some IP packets have link layer in them, need to change them around!
-    mac_translateIPLinkLayer(ll_8023_type);
-  }
- 
 #if UIP_CONF_IPV6_RPL
-/* We won't play ping-pong with the host! */
-    if(uip_ipaddr_cmp(&last_sender, &UIP_IP_BUF->srcipaddr)) {
-        PRINTF("siclow_ethernet: Destination off-link but no route\n");
-        uip_len=0;
-        return;
-    }
+	/* We won't play ping-pong with the host! */
+	if(uip_ipaddr_cmp(&last_sender, &UIP_IP_BUF->srcipaddr)) {
+		PRINTF("siclow_ethernet: Destination off-link but no route\n");
+		uip_len=0;
+		return;
+	}
 #endif
 
-  PRINTF("Low2Eth: Sending packet to ethernet\n\r");
+	PRINTF("Low2Eth: Sending packet to ethernet\n\r");
 
-  uip_len += UIP_LLH_LEN;
+	uip_len += UIP_LLH_LEN;
 
-  usb_eth_send(uip_buf, uip_len, 1);
+	usb_eth_send(uip_buf, uip_len, 1);
 #if !RF230BB
-  usb_eth_stat.rxok++;
+	usb_eth_stat.rxok++;
 #endif
-  uip_len = 0;
+	uip_len = 0;
 }
 
 /**
@@ -564,13 +558,13 @@ int8_t mac_translateIPLinkLayer(lltype_t target)
 {
 
 #if UIP_LLADDR_LEN == 8
-  if (UIP_IP_BUF->proto == UIP_PROTO_ICMP6) {
-    PRINTF("eth2low: ICMP Message detected\n\r");
-    return mac_translateIcmpLinkLayer(target);
-  }
-  return 0;
+	if (UIP_IP_BUF->proto == UIP_PROTO_ICMP6) {
+		PRINTF("eth2low: ICMP Message detected\n\r");
+		return mac_translateIcmpLinkLayer(target);
+	}
+	return 0;
 #else
-  return 1;
+	return 1;
 #endif
 
 }
@@ -579,9 +573,9 @@ int8_t mac_translateIPLinkLayer(lltype_t target)
 #include "net/uip-nd6.h"
 
 typedef struct {
-  uint8_t type;
-  uint8_t length;
-  uint8_t data[16];
+	uint8_t type;
+	uint8_t length;
+	uint8_t data[16];
 } icmp_opts_t;
 
 #define UIP_ICMP_BUF     ((struct uip_icmp_hdr *)&uip_buf[UIP_LLH_LEN + UIP_IPH_LEN])
@@ -602,141 +596,135 @@ void slide(uint8_t * data, uint8_t length, int16_t slide);
  */
 int8_t mac_translateIcmpLinkLayer(lltype_t target)
 {
-  uint16_t icmp_opt_offset = 0;
-  int16_t len = UIP_IP_BUF->len[1] | (UIP_IP_BUF->len[0] << 8);
+	uint16_t icmp_opt_offset = 0;
+	int16_t len = UIP_IP_BUF->len[1] | (UIP_IP_BUF->len[0] << 8);
+	uint16_t iplen;
+	uint8_t i;
+	int16_t sizechange;
+	uint8_t llbuf[16];
 
-  uint16_t iplen;
+	//Figure out offset to start of options
+	switch(UIP_ICMP_BUF->type) {
+	case ICMP6_NS:
+	case ICMP6_NA:
+		icmp_opt_offset = 24;
+		break;
+	case ICMP6_RS:
+		icmp_opt_offset = 8;
+		break;
+	case ICMP6_RA:
+		icmp_opt_offset = 16;
+		break;
+	case ICMP6_REDIRECT:
+		icmp_opt_offset = 40;
+		break;
+	/** Things without link-layer */
+	case ICMP6_DST_UNREACH:
+	case ICMP6_PACKET_TOO_BIG:
+	case ICMP6_TIME_EXCEEDED:	
+	case ICMP6_PARAM_PROB:
+	case ICMP6_ECHO_REQUEST:  
+	case ICMP6_ECHO_REPLY: 
+		return 0;
+		break;
+	default:
+		return -1;
+	}
 
-  uint8_t i;
+	//Figure out length of options
+	len -= icmp_opt_offset;
 
-  int16_t sizechange;
+	//Sanity check
+	if (len < 8)
+		return -2; 
 
-  uint8_t llbuf[16];
+	//While we have options to do...
+	while (len >= 8) {
 
-  //Figure out offset to start of options
-  switch(UIP_ICMP_BUF->type) {
-    case ICMP6_NS:
-    case ICMP6_NA:
-      icmp_opt_offset = 24;
-      break;
+		//If we have one of these, we have something useful!
+		if (((UIP_ICMP_OPTS(icmp_opt_offset)->type) == UIP_ND6_OPT_SLLAO) || 
+			((UIP_ICMP_OPTS(icmp_opt_offset)->type) == UIP_ND6_OPT_TLLAO) ) {
 
-    case ICMP6_RS:
-      icmp_opt_offset = 8;
-      break;
+		/* Shrinking the buffer may thrash things, so we store the old
+		link-layer address */
+		for(i = 0; i < (UIP_ICMP_OPTS(icmp_opt_offset)->length*8 - 2); i++) {
+			llbuf[i] = UIP_ICMP_OPTS(icmp_opt_offset)->data[i];
+		}
 
-    case ICMP6_RA:
-      icmp_opt_offset = 16;
-      break;
+		//Shrink/grow buffer as needed
+		if (target == ll_802154_type) {
+			//Current is 802.3, Hence current link-layer option is 6 extra bytes
+			sizechange = 8;
+			slide(UIP_ICMP_OPTS(icmp_opt_offset)->data + 6, len - 6, sizechange);
+		} else if (target == ll_8023_type) {
+			/* Current is 802.15.4, Hence current link-layer option is 14 extra
+			 * bytes.
+			 * (Actual LL is 8 bytes, but total option length is in multiples of
+			 * 8 Bytes, hence 8 + 2 = 10. Closest is 16 bytes, then 16 bytes for
+			 * total optional length - 2 bytes for type + length leaves 14 )
+			 */
+			sizechange = -8;
+			slide(UIP_ICMP_OPTS(icmp_opt_offset)->data + 14, len - 14, sizechange);
+		} else {
+			return -3; //Uh-oh!
+		}
 
-    case ICMP6_REDIRECT:
-      icmp_opt_offset = 40;
-      break;
-
-      /** Things without link-layer */
-    case ICMP6_DST_UNREACH:
-    case ICMP6_PACKET_TOO_BIG:
-    case ICMP6_TIME_EXCEEDED:	
-    case ICMP6_PARAM_PROB:
-    case ICMP6_ECHO_REQUEST:  
-    case ICMP6_ECHO_REPLY: 
-      return 0;
-      break;
-
-    default:
-      return -1;
-  }
-
-  //Figure out length of options
-  len -= icmp_opt_offset;
-
-  //Sanity check
-  if (len < 8) return -2; 
-
-  //While we have options to do...
-  while (len >= 8){
-    
-    //If we have one of these, we have something useful!
-    if (((UIP_ICMP_OPTS(icmp_opt_offset)->type) == UIP_ND6_OPT_SLLAO) || 
-        ((UIP_ICMP_OPTS(icmp_opt_offset)->type) == UIP_ND6_OPT_TLLAO) ) {
-      
-      /* Shrinking the buffer may thrash things, so we store the old
-         link-layer address */
-      for(i = 0; i < (UIP_ICMP_OPTS(icmp_opt_offset)->length*8 - 2); i++) {
-        llbuf[i] = UIP_ICMP_OPTS(icmp_opt_offset)->data[i];
-      }
-
-      //Shrink/grow buffer as needed
-      if (target == ll_802154_type) {
-        //Current is 802.3, Hence current link-layer option is 6 extra bytes
-        sizechange = 8;
-        slide(UIP_ICMP_OPTS(icmp_opt_offset)->data + 6, len - 6, sizechange);
-      } else if (target == ll_8023_type) {
-        /* Current is 802.15.4, Hence current link-layer option is 14 extra
-         * bytes.
-         * (Actual LL is 8 bytes, but total option length is in multiples of
-         * 8 Bytes, hence 8 + 2 = 10. Closest is 16 bytes, then 16 bytes for
-         * total optional length - 2 bytes for type + length leaves 14 )
-         */
-        sizechange = -8;
-        slide(UIP_ICMP_OPTS(icmp_opt_offset)->data + 14, len - 14, sizechange);
-      } else {
-        return -3; //Uh-oh!
-      }
-      
-      //Translate addresses
-      if (target == ll_802154_type) {
-        mac_createSicslowpanLongAddr(llbuf, (uip_lladdr_t *)UIP_ICMP_OPTS(icmp_opt_offset)->data);
-      } else {
+		//Translate addresses
+		if (target == ll_802154_type) {
+			mac_createSicslowpanLongAddr(llbuf,
+					(uip_lladdr_t *)UIP_ICMP_OPTS(icmp_opt_offset)->data);
+		} else {
 #if !UIP_CONF_SIMPLE_JACKDAW_ADDR_TRANS
-        if(!mac_createEthernetAddr(UIP_ICMP_OPTS(icmp_opt_offset)->data, (uip_lladdr_t *)llbuf))
+			if(!mac_createEthernetAddr(UIP_ICMP_OPTS(icmp_opt_offset)->data,
+					(uip_lladdr_t *)llbuf))
 #endif
-            mac_createDefaultEthernetAddr(UIP_ICMP_OPTS(icmp_opt_offset)->data);
-      }
-      
-      //Adjust the length
-      if (target == ll_802154_type) {
-        UIP_ICMP_OPTS(icmp_opt_offset)->length = 2;
-      } else {
-        UIP_ICMP_OPTS(icmp_opt_offset)->length = 1;
-      }
+				mac_createDefaultEthernetAddr(UIP_ICMP_OPTS(icmp_opt_offset)->data);
+			}
 
-      //Adjust the IP header length, as well as uIP length
-      iplen = UIP_IP_BUF->len[1] | (UIP_IP_BUF->len[0]<<8);
-      iplen += sizechange;
-      len += sizechange;
-      
-      UIP_IP_BUF->len[1] = (uint8_t)iplen;
-      UIP_IP_BUF->len[0] = (uint8_t)(iplen >> 8);
+			//Adjust the length
+			if (target == ll_802154_type) {
+				UIP_ICMP_OPTS(icmp_opt_offset)->length = 2;
+			} else {
+				UIP_ICMP_OPTS(icmp_opt_offset)->length = 1;
+			}
 
-      uip_len += sizechange;
+			//Adjust the IP header length, as well as uIP length
+			iplen = UIP_IP_BUF->len[1] | (UIP_IP_BUF->len[0]<<8);
+			iplen += sizechange;
+			len += sizechange;
 
-      //We broke ICMP checksum, be sure to fix that
-      UIP_ICMP_BUF->icmpchksum = 0;
+			UIP_IP_BUF->len[1] = (uint8_t)iplen;
+			UIP_IP_BUF->len[0] = (uint8_t)(iplen >> 8);
+
+			uip_len += sizechange;
+
+			//We broke ICMP checksum, be sure to fix that
+			UIP_ICMP_BUF->icmpchksum = 0;
 #if UIP_CONF_IPV6   //allow non ipv6 builds
-      UIP_ICMP_BUF->icmpchksum = ~uip_icmp6chksum();
+			UIP_ICMP_BUF->icmpchksum = ~uip_icmp6chksum();
 #endif
 
-      //Finally set up next run in while loop
-      len -= 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
-      icmp_opt_offset += 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
-    } else {
-	  
-      //Not an option we care about, ignore it
-      len -= 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
-	      
-      //This shouldn't happen!
-      if (UIP_ICMP_OPTS(icmp_opt_offset)->length == 0) {
-        PRINTF("Option in ND packet has length zero, error?\n\r");
-        len = 0;
-      }
+			//Finally set up next run in while loop
+			len -= 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
+			icmp_opt_offset += 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
+		} else {
 
-      icmp_opt_offset += 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
-      
-    } //If ICMP_OPT is one we care about
-   
-  } //while(len >= 8)
+			//Not an option we care about, ignore it
+			len -= 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
 
-  return 0;
+			//This shouldn't happen!
+			if (UIP_ICMP_OPTS(icmp_opt_offset)->length == 0) {
+				PRINTF("Option in ND packet has length zero, error?\n\r");
+				len = 0;
+			}
+
+			icmp_opt_offset += 8 * UIP_ICMP_OPTS(icmp_opt_offset)->length;
+
+		} //If ICMP_OPT is one we care about
+
+	} //while(len >= 8)
+
+	return 0;
 
 }
 

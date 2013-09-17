@@ -89,9 +89,9 @@ void rime_input(void);
 int rime_output(struct channel *c);
 
 struct rime_sniffer {
-  struct rime_sniffer *next;
-  void (* input_callback)(void);
-  void (* output_callback)(int mac_status);
+	struct rime_sniffer *next;
+	void (* input_callback)(void);
+	void (* output_callback)(int mac_status);
 };
 
 #define RIME_SNIFFER(name, input_callback, output_callback) \
@@ -104,10 +104,10 @@ extern const struct network_driver rime_driver;
 
 /* Generic Rime return values. */
 enum {
-  RIME_OK,
-  RIME_ERR,
-  RIME_ERR_CONTENTION,
-  RIME_ERR_NOACK,
+	RIME_OK,
+	RIME_ERR,
+	RIME_ERR_CONTENTION,
+	RIME_ERR_NOACK,
 };
 #endif /* __RIME_H__ */
 

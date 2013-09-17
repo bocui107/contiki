@@ -54,24 +54,18 @@ const rimeaddr_t rimeaddr_null = { { 0, 0, 0, 0, 0, 0, 0, 0 } };
 #endif /*RIMEADDR_SIZE == 8*/
 #endif /*RIMEADDR_SIZE == 2*/
 
-
-/*---------------------------------------------------------------------------*/
-void
-rimeaddr_copy(rimeaddr_t *dest, const rimeaddr_t *src)
+void rimeaddr_copy(rimeaddr_t *dest, const rimeaddr_t *src)
 {
 	memcpy(dest, src, RIMEADDR_SIZE);
 }
-/*---------------------------------------------------------------------------*/
-int
-rimeaddr_cmp(const rimeaddr_t *addr1, const rimeaddr_t *addr2)
+
+int rimeaddr_cmp(const rimeaddr_t *addr1, const rimeaddr_t *addr2)
 {
 	return (memcmp(addr1, addr2, RIMEADDR_SIZE) == 0);
 }
-/*---------------------------------------------------------------------------*/
-void
-rimeaddr_set_node_addr(rimeaddr_t *t)
+
+void rimeaddr_set_node_addr(rimeaddr_t *t)
 {
-  rimeaddr_copy(&rimeaddr_node_addr, t);
+	rimeaddr_copy(&rimeaddr_node_addr, t);
 }
-/*---------------------------------------------------------------------------*/
 /** @} */

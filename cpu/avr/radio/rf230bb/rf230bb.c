@@ -795,20 +795,6 @@ static int rf230_transmit(unsigned short payload_len)
 	HAL_LEAVE_CRITICAL_REGION();
 	PRINTF("rf230_transmit: %d\n", (int)total_len);
 
-#if DEBUG>1
-	/* Note the dumped packet will have a zero checksum unless compiled with RF230_CONF_CHECKSUM
-	 * since we don't know what it will be if calculated by the hardware.
-	 */
-	{
-		uint8_t i;
-
-		PRINTF("0000");       //Start a new wireshark packet
-		for (i = 0; i < total_len; i++)
-			PRINTF(" %02x",buffer[i]);
-		PRINTF("\n");
-	}
-#endif
-
 #if RADIOSTATS
 	RF230_sendpackets++;
 #endif
@@ -1149,17 +1135,7 @@ PROCESS_THREAD(rf230_process, ev, data)
 		/* Restore interrupts. */
 		HAL_LEAVE_CRITICAL_REGION();
 		PRINTF("rf230_read: %u bytes lqi %u\n", len, rf230_last_correlation);
-#if DEBUG>1
-		{
-			uint8_t i;
-			unsigned const char * rxdata = packetbuf_dataptr();
 
-			PRINTF("0000");
-			for (i = 0; i < len + AUX_LEN; i++)
-				PRINTF(" %02x",rxdata[i]);
-			PRINTF("\n");
-		}
-#endif
 		if(len > 0) {
 			packetbuf_set_datalen(len);
 			NETSTACK_RDC.input();
@@ -1215,11 +1191,6 @@ static int rf230_read(void *buf, unsigned short bufsize)
 	/* The length includes the two-byte checksum but not the LQI byte */
 	len = rxframe[rxframe_head].length;
 	if (len == 0) {
-#if RADIOALWAYSON && DEBUGFLOWSIZE
-		if (RF230_receive_on == 0) {
-			if (debugflow[debugflowsize - 1] != 'z')
-		} //cxmac calls with radio off?
-#endif
 		return 0;
 	}
 
@@ -1262,7 +1233,7 @@ static int rf230_read(void *buf, unsigned short bufsize)
 	rxframe_head++;
 
 	if (rxframe_head >= RF230_CONF_RX_BUFFERS) {
-		rxframe_head=0;
+		rxframe_head = 0;
 	}
 	/* If another packet has been buffered, schedule another receive poll */
 	if (rxframe[rxframe_head].length) {
@@ -1284,38 +1255,31 @@ static int rf230_read(void *buf, unsigned short bufsize)
 
 	framep += TIMESTAMP_LEN;
 
-#if RF230_CONF_CHECKSUM
-	if(checksum != crc16_data(buf, len - AUX_LEN, 0)) {
-	}
-#endif /* RF230_CONF_CHECKSUM */
-
-/* Get the received signal strength for the packet, 0-84 dB above rx threshold */
+	/* Get the received signal strength for the packet, 0-84 dB above rx threshold */
 #if RF230_CONF_AUTOACK
 	rf230_last_rssi = hal_register_read(RG_PHY_ED_LEVEL);  //0-84, resolution 1 dB
 #endif
-
 	/* Save the smallest rssi. The display routine can reset by setting it to zero */
 	if ((rf230_smallest_rssi == 0) || (rf230_last_rssi < rf230_smallest_rssi))
 		rf230_smallest_rssi = rf230_last_rssi;
 
-		packetbuf_set_attr(PACKETBUF_ATTR_RSSI, rf230_last_rssi);
-		packetbuf_set_attr(PACKETBUF_ATTR_LINK_QUALITY, rf230_last_correlation);
+	packetbuf_set_attr(PACKETBUF_ATTR_RSSI, rf230_last_rssi);
+	packetbuf_set_attr(PACKETBUF_ATTR_LINK_QUALITY, rf230_last_correlation);
 
-		RIMESTATS_ADD(rx);
+	RIMESTATS_ADD(rx);
 
 #if RF230_CONF_TIMESTAMPS
-		rf230_time_of_departure = t.time + setup_time_for_transmission +
-			(total_time_for_transmission * (len - 2)) / total_transmission_len;
+	rf230_time_of_departure = t.time + setup_time_for_transmission +
+		(total_time_for_transmission * (len - 2)) / total_transmission_len;
 
-		rf230_authority_level_of_sender = t.authority_level;
+	rf230_authority_level_of_sender = t.authority_level;
 
-		packetbuf_set_attr(PACKETBUF_ATTR_TIMESTAMP, t.time);
+	packetbuf_set_attr(PACKETBUF_ATTR_TIMESTAMP, t.time);
 #endif /* RF230_CONF_TIMESTAMPS */
 
 #ifdef RF230BB_HOOK_RX_PACKET
 	RF230BB_HOOK_RX_PACKET(buf,len);
 #endif
-
 	/* Here return just the data length. The checksum is however
 	 * still in the buffer for packet sniffing */
 	return len - AUX_LEN;
@@ -1489,11 +1453,11 @@ rf230_receiving_packet(void)
 	return 0;
 }
 
-static int
-rf230_pending_packet(void)
+static int rf230_pending_packet(void)
 {
 #if RF230_INSERTACK
-	if(ack_pending == 1) return 1;
+	if(ack_pending == 1)
+		return 1;
 #endif
 	return rf230_pending;
 }

@@ -160,29 +160,28 @@ hal_init(void)
 
 #define HAL_RF230_ISR() ISR(RADIO_VECT)
 
-void
-hal_init(void)
+void hal_init(void)
 {
-    /*Reset variables used in file.*/
+	/* Reset variables used in file.*/
 
-    /*IO Specific Initialization - sleep and reset pins. */
-    /* Set pins low before they are initialized as output? Does not seem to matter */
-    DDR_SLP_TR |= (1 << SLP_TR); /* Enable SLP_TR as output. */
-    DDR_RST    |= (1 << RST);    /* Enable RST as output. */
+	/* IO Specific Initialization - sleep and reset pins. */
+	/* Set pins low before they are initialized as output? Does not seem to matter */
+	DDR_SLP_TR |= (1 << SLP_TR); /* Enable SLP_TR as output. */
+	DDR_RST    |= (1 << RST);    /* Enable RST as output. */
 
-    /*SPI Specific Initialization.*/
-    /* Set SS, CLK and MOSI as output. */
-    /* To avoid a SPI glitch, the port register shall be set before the DDR register */ 
-    HAL_PORT_SPI |= (1 << HAL_DD_SS) | (1 << HAL_DD_SCK); /* Set SS and CLK high */
-    HAL_DDR_SPI  |= (1 << HAL_DD_SS) | (1 << HAL_DD_SCK) | (1 << HAL_DD_MOSI);
-    HAL_DDR_SPI  &=~ (1<< HAL_DD_MISO);                   /* MISO input */ 
+	/* SPI Specific Initialization.*/
+	/* Set SS, CLK and MOSI as output. */
+	/* To avoid a SPI glitch, the port register shall be set before the DDR register */ 
+	HAL_PORT_SPI |= (1 << HAL_DD_SS) | (1 << HAL_DD_SCK); /* Set SS and CLK high */
+	HAL_DDR_SPI  |= (1 << HAL_DD_SS) | (1 << HAL_DD_SCK) | (1 << HAL_DD_MOSI);
+	HAL_DDR_SPI  &=~ (1<< HAL_DD_MISO);                   /* MISO input */ 
 
-    /* Run SPI at max speed */
-    SPCR         = (1 << SPE) | (1 << MSTR); /* Enable SPI module and master operation. */
-    SPSR         = (1 << SPI2X); /* Enable doubled SPI speed in master mode. */
+	/* Run SPI at max speed */
+	SPCR = (1 << SPE) | (1 << MSTR); /* Enable SPI module and master operation. */
+	SPSR = (1 << SPI2X); /* Enable doubled SPI speed in master mode. */
 
-    /* Enable interrupts from the radio transceiver. */
-    hal_enable_trx_interrupt();
+	/* Enable interrupts from the radio transceiver. */
+	hal_enable_trx_interrupt();
 }
 
 #else /* __AVR__ */
@@ -194,36 +193,36 @@ hal_init(void)
 void
 hal_init(void)
 {
-    /*Reset variables used in file.*/
+	/*Reset variables used in file.*/
 
-    /*IO Specific Initialization - sleep and reset pins. */
-    DDR_SLP_TR |= (1 << SLP_TR); /* Enable SLP_TR as output. */
-    DDR_RST    |= (1 << RST);    /* Enable RST as output. */
+	/*IO Specific Initialization - sleep and reset pins. */
+	DDR_SLP_TR |= (1 << SLP_TR); /* Enable SLP_TR as output. */
+	DDR_RST    |= (1 << RST);    /* Enable RST as output. */
 
-    /*SPI Specific Initialization.*/
-    /* Set SS, CLK and MOSI as output. */
-    HAL_DDR_SS  |= (1 << HAL_SS_PIN);
-    HAL_DDR_SCK  |= (1 << HAL_SCK_PIN);
-    HAL_DDR_MOSI  |= (1 << HAL_MOSI_PIN);
-    HAL_DDR_MISO  &= ~(1 << HAL_MISO_PIN);
+	/*SPI Specific Initialization.*/
+	/* Set SS, CLK and MOSI as output. */
+	HAL_DDR_SS  |= (1 << HAL_SS_PIN);
+	HAL_DDR_SCK  |= (1 << HAL_SCK_PIN);
+	HAL_DDR_MOSI  |= (1 << HAL_MOSI_PIN);
+	HAL_DDR_MISO  &= ~(1 << HAL_MISO_PIN);
 
-    /* Set SS */
-    HAL_PORT_SS |= (1 << HAL_SS_PIN); // HAL_SS_HIGH()
-    HAL_PORT_SCK &= ~(1 << HAL_SCK_PIN); // SCLK.clr()
+	/* Set SS */
+	HAL_PORT_SS |= (1 << HAL_SS_PIN); // HAL_SS_HIGH()
+	HAL_PORT_SCK &= ~(1 << HAL_SCK_PIN); // SCLK.clr()
 
-    /*TIMER Specific Initialization.*/
-    TB3 = ((16*10) - 1); // 16 us ticks
-    TB3MR.BYTE = 0b00000000; // Timer mode, F1
-    TBSR.BIT.TB3S = 1; // Start Timer B3
+	/*TIMER Specific Initialization.*/
+	TB3 = ((16*10) - 1); // 16 us ticks
+	TB3MR.BYTE = 0b00000000; // Timer mode, F1
+	TBSR.BIT.TB3S = 1; // Start Timer B3
 
-    TB4 = 0xFFFF; //
-    TB4MR.BYTE = 0b10000001; // Counter mode, count TB3
-    TBSR.BIT.TB4S = 1; // Start Timer B4
-    INT1IC.BIT.POL = 1; // Select rising edge
-    HAL_ENABLE_OVERFLOW_INTERRUPT(); /* Enable Timer overflow interrupt. */
+	TB4 = 0xFFFF; //
+	TB4MR.BYTE = 0b10000001; // Counter mode, count TB3
+	TBSR.BIT.TB4S = 1; // Start Timer B4
+	INT1IC.BIT.POL = 1; // Select rising edge
+	HAL_ENABLE_OVERFLOW_INTERRUPT(); /* Enable Timer overflow interrupt. */
 
-    /* Enable interrupts from the radio transceiver. */
-    hal_enable_trx_interrupt();
+	/* Enable interrupts from the radio transceiver. */
+	hal_enable_trx_interrupt();
 }
 #endif  /* !__AVR__ */
 
@@ -275,27 +274,25 @@ hal_subregister_write(uint16_t address, uint8_t mask, uint8_t position,
  *
  *  \returns The actual value of the read register.
  */
-uint8_t
-hal_register_read(uint8_t address)
+uint8_t hal_register_read(uint8_t address)
 {
-    uint8_t register_value;
-    /* Add the register read command to the register address. */
-    /* Address should be < 0x2f so no need to mask */
-//  address &= 0x3f;
-    address |= 0x80;
+	uint8_t register_value;
 
-    HAL_SPI_TRANSFER_OPEN();
+	/* Add the register read command to the register address. */
+	/* Address should be < 0x2f so no need to mask */
+	address |= 0x80;
 
-    /*Send Register address and read register content.*/
-    HAL_SPI_TRANSFER(address);
-    register_value = HAL_SPI_TRANSFER(0);
+	HAL_SPI_TRANSFER_OPEN();
 
-    HAL_SPI_TRANSFER_CLOSE();
+	/*Send Register address and read register content.*/
+	HAL_SPI_TRANSFER(address);
+	register_value = HAL_SPI_TRANSFER(0);
 
-    return register_value;
+	HAL_SPI_TRANSFER_CLOSE();
+
+	return register_value;
 }
 
-/*----------------------------------------------------------------------------*/
 /** \brief  This function writes a new value to one of the radio transceiver's
  *          registers.
  *
@@ -304,21 +301,20 @@ hal_register_read(uint8_t address)
  *  \param  address Address of register to write.
  *  \param  value   Value to write.
  */
-void
-hal_register_write(uint8_t address, uint8_t value)
+void hal_register_write(uint8_t address, uint8_t value)
 {
-    /* Add the Register Write (short mode) command to the address. */
-    address = 0xc0 | address;
+	/* Add the Register Write (short mode) command to the address. */
+	address = 0xc0 | address;
 
-    HAL_SPI_TRANSFER_OPEN();
+	HAL_SPI_TRANSFER_OPEN();
 
-    /*Send Register address and write register content.*/
-    HAL_SPI_TRANSFER(address);
-    HAL_SPI_TRANSFER(value);
+	/*Send Register address and write register content.*/
+	HAL_SPI_TRANSFER(address);
+	HAL_SPI_TRANSFER(value);
 
-    HAL_SPI_TRANSFER_CLOSE();
+	HAL_SPI_TRANSFER_CLOSE();
 }
-/*----------------------------------------------------------------------------*/
+
 /** \brief  This function reads the value of a specific subregister.
  *
  *  \see Look at the at86rf230_registermap.h file for register and subregister
@@ -329,15 +325,15 @@ hal_register_write(uint8_t address, uint8_t value)
  *  \param  position   Bit position of the subregister
  *  \retval Value of the read subregister.
  */
-uint8_t
-hal_subregister_read(uint8_t address, uint8_t mask, uint8_t position)
+uint8_t hal_subregister_read(uint8_t address, uint8_t mask, uint8_t position)
 {
-    /* Read current register value and mask out subregister. */
-    uint8_t register_value = hal_register_read(address);
-    register_value &= mask;
-    register_value >>= position; /* Align subregister value. */
+	/* Read current register value and mask out subregister. */
+	uint8_t register_value = hal_register_read(address);
 
-    return register_value;
+	register_value &= mask;
+	register_value >>= position; /* Align subregister value. */
+
+	return register_value;
 }
 /*----------------------------------------------------------------------------*/
 /** \brief  This function writes a new value to one of the radio transceiver's
@@ -351,25 +347,24 @@ hal_subregister_read(uint8_t address, uint8_t mask, uint8_t position)
  *  \param  position  Bit position of the subregister
  *  \param  value  Value to write into the subregister.
  */
-void
-hal_subregister_write(uint8_t address, uint8_t mask, uint8_t position,
+void hal_subregister_write(uint8_t address, uint8_t mask, uint8_t position,
                             uint8_t value)
 {
-    /* Read current register value and mask area outside the subregister. */
-    volatile uint8_t register_value = hal_register_read(address);
-    register_value &= ~mask;
+	/* Read current register value and mask area outside the subregister. */
+	volatile uint8_t register_value = hal_register_read(address);
+	register_value &= ~mask;
 
-    /* Start preparing the new subregister value. shift in place and mask. */
-    value <<= position;
-    value &= mask;
+	/* Start preparing the new subregister value. shift in place and mask. */
+	value <<= position;
+	value &= mask;
 
-    value |= register_value; /* Set the new subregister value. */
+	value |= register_value; /* Set the new subregister value. */
 
-    /* Write the modified register value. */
-    hal_register_write(address, value);
+	/* Write the modified register value. */
+	hal_register_write(address, value);
 }
 #endif /* defined(__AVR_ATmega128RFA1__) */
-/*----------------------------------------------------------------------------*/
+
 /** \brief  Transfer a frame from the radio transceiver to a RAM buffer
  *
  *          This version is optimized for use with contiki RF230BB driver.
@@ -454,8 +449,6 @@ hal_frame_read(hal_rx_frame_t *rx_frame)
              * The 802.15.4 standard requires 640us after a greater than 18 byte frame.
              * With a low interrupt latency overwrites should never occur.
              */
-    //          crc = _crc_ccitt_update(crc, tempData);
-
             HAL_SPI_TRANSFER_WAIT();
 
         } while (--frame_length > 0);
@@ -491,7 +484,6 @@ hal_frame_write(uint8_t *write_buffer, uint8_t length)
     /* Write frame length, including the two byte checksum */
     /* The top bit of the length field shall be set to 0 for IEEE 802.15.4 compliant frames */
     /* It should already be clear, so bypassing the masking is sanity check of the uip stack */
-//  length &= 0x7f;
     _SFR_MEM8(tx_buffer++) = length;
     
     /* Download to the Frame Buffer.
@@ -507,8 +499,6 @@ hal_frame_write(uint8_t *write_buffer, uint8_t length)
     /* Optionally truncate length to maximum frame length.
      * Not doing this is a fast way to know when the application needs fixing!
      */
-//  length &= 0x7f; 
-
     HAL_SPI_TRANSFER_OPEN();
 
     /* Send Frame Transmit (long mode) command and frame length */
@@ -560,14 +550,16 @@ volatile char rf230interruptflag;
 /* Received packet interrupt */
 ISR(TRX24_RX_END_vect)
 {
-/* Get the rssi from ED if extended mode */
+	/* Get the rssi from ED if extended mode */
 #if RF230_CONF_AUTOACK
 	rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
 #endif
 
-/* Buffer the frame and call rf230_interrupt to schedule poll for rf230 receive process */
-/* Is a ram buffer available? */
-	if (rxframe[rxframe_tail].length) {DEBUGFLOW('0');} else /*DEBUGFLOW('1')*/;
+	/* Buffer the frame and call rf230_interrupt to schedule poll for rf230 receive process */
+	/* Is a ram buffer available? */
+	if (rxframe[rxframe_tail].length) {
+		DEBUGFLOW('0');
+	}
 
 #ifdef RF230_MIN_RX_POWER		 
 /* Discard packets weaker than the minimum if defined. This is for testing miniature meshes */
@@ -607,13 +599,13 @@ extern volatile uint8_t rf230_wakewait, rf230_txendwait,rf230_ccawait;
 /* Wake has finished */
 ISR(TRX24_AWAKE_vect)
 {
-  rf230_wakewait=0;
+	rf230_wakewait=0;
 }
 
 /* Transmission has ended */
 ISR(TRX24_TX_END_vect)
 {
-  rf230_txendwait=0;
+	rf230_txendwait=0;
 }
 
 /* Frame address has matched ours */
@@ -677,8 +669,9 @@ HAL_RF230_ISR()
 				INTERRUPTDEBUG(12);
 	 
 #ifdef RF230_MIN_RX_POWER		 
-         /* Discard packets weaker than the minimum if defined. This is for testing miniature meshes.*/
-         /* Save the rssi for printing in the main loop */
+			 /* Discard packets weaker than the minimum if defined.
+			  * This is for testing miniature meshes. Save the rssi
+			  * for printing in the main loop */
 #if RF230_CONF_AUTOACK
 			rf230_last_rssi=hal_register_read(RG_PHY_ED_LEVEL);
 #endif
@@ -688,7 +681,7 @@ HAL_RF230_ISR()
 				rxframe_tail++;
 
 				if (rxframe_tail >= RF230_CONF_RX_BUFFERS)
-					rxframe_tail=0;
+					rxframe_tail = 0;
 
 				rf230_interrupt();
 #ifdef RF230_MIN_RX_POWER

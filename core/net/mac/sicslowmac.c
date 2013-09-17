@@ -209,6 +209,7 @@ static void input_packet(void)
 				PRINTF("6MAC: for another pan %u\n", frame.dest_pid);
 				return;
 			}
+
 			if(!is_broadcast_addr(frame.fcf.dest_addr_mode, frame.dest_addr)) {
 				packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, (rimeaddr_t *)&frame.dest_addr);
 #if !NETSTACK_CONF_BRIDGE_MODE
