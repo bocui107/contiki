@@ -117,29 +117,29 @@
  * \brief Defines the bitfields of the frame control field (FCF).
  */
 typedef struct {
-  uint8_t frame_type;        /**< 3 bit. Frame type field, see 802.15.4 */
-  uint8_t security_enabled;  /**< 1 bit. True if security is used in this frame */
-  uint8_t frame_pending;     /**< 1 bit. True if sender has more data to send */
-  uint8_t ack_required;      /**< 1 bit. Is an ack frame required? */
-  uint8_t panid_compression; /**< 1 bit. Is this a compressed header? */
-  /*   uint8_t reserved; */  /**< 3 bit. Unused bits */
-  uint8_t dest_addr_mode;    /**< 2 bit. Destination address mode, see 802.15.4 */
-  uint8_t frame_version;     /**< 2 bit. 802.15.4 frame version */
-  uint8_t src_addr_mode;     /**< 2 bit. Source address mode, see 802.15.4 */
+	uint8_t frame_type;        /**< 3 bit. Frame type field, see 802.15.4 */
+	uint8_t security_enabled;  /**< 1 bit. True if security is used in this frame */
+	uint8_t frame_pending;     /**< 1 bit. True if sender has more data to send */
+	uint8_t ack_required;      /**< 1 bit. Is an ack frame required? */
+	uint8_t panid_compression; /**< 1 bit. Is this a compressed header? */
+	/* uint8_t reserved; */    /**< 3 bit. Unused bits */
+	uint8_t dest_addr_mode;    /**< 2 bit. Destination address mode, see 802.15.4 */
+	uint8_t frame_version;     /**< 2 bit. 802.15.4 frame version */
+	uint8_t src_addr_mode;     /**< 2 bit. Source address mode, see 802.15.4 */
 } frame802154_fcf_t;
 
 /** \brief 802.15.4 security control bitfield.  See section 7.6.2.2.1 in 802.15.4 specification */
 typedef struct {
-  uint8_t  security_level; /**< 3 bit. security level      */
-  uint8_t  key_id_mode;    /**< 2 bit. Key identifier mode */
-  uint8_t  reserved;       /**< 3 bit. Reserved bits       */
+	uint8_t  security_level; /**< 3 bit. security level      */
+	uint8_t  key_id_mode;    /**< 2 bit. Key identifier mode */
+	uint8_t  reserved;       /**< 3 bit. Reserved bits       */
 } frame802154_scf_t;
 
 /** \brief 802.15.4 Aux security header */
 typedef struct {
-  frame802154_scf_t security_control;  /**< Security control bitfield */
-  uint32_t frame_counter;   /**< Frame counter, used for security */
-  uint8_t  key[9];          /**< The key itself, or an index to the key */
+	frame802154_scf_t security_control;  /**< Security control bitfield */
+	uint32_t frame_counter;   /**< Frame counter, used for security */
+	uint8_t  key[9];          /**< The key itself, or an index to the key */
 } frame802154_aux_hdr_t;
 
 /** \brief Parameters used by the frame802154_create() function.  These
@@ -147,15 +147,15 @@ typedef struct {
  *  specification for details.
  */
 typedef struct {
-  frame802154_fcf_t fcf;            /**< Frame control field  */
-  uint8_t seq;          /**< Sequence number */
-  uint16_t dest_pid;    /**< Destination PAN ID */
-  uint8_t dest_addr[8];     /**< Destination address */
-  uint16_t src_pid;     /**< Source PAN ID */
-  uint8_t src_addr[8];      /**< Source address */
-  frame802154_aux_hdr_t aux_hdr;    /**< Aux security header */
-  uint8_t *payload;     /**< Pointer to 802.15.4 frame payload */
-  uint8_t payload_len;  /**< Length of payload field */
+	frame802154_fcf_t fcf; /**< Frame control field  */
+	uint8_t seq;           /**< Sequence number */
+	uint16_t dest_pid;     /**< Destination PAN ID */
+	uint8_t dest_addr[8];  /**< Destination address */
+	uint16_t src_pid;      /**< Source PAN ID */
+	uint8_t src_addr[8];   /**< Source address */
+	frame802154_aux_hdr_t aux_hdr;    /**< Aux security header */
+	uint8_t *payload;      /**< Pointer to 802.15.4 frame payload */
+	uint8_t payload_len;   /**< Length of payload field */
 } frame802154_t;
 
 /* Prototypes */

@@ -1024,38 +1024,38 @@ rf230_set_pan_addr(unsigned pan,
                     unsigned addr,
                     const uint8_t ieee_addr[8])
 {
-  PRINTF("rf230: PAN=%x Short Addr=%x\n",pan,addr);
-  
-  uint8_t abyte;
-  abyte = pan & 0xFF;
-  hal_register_write(RG_PAN_ID_0,abyte);
-  abyte = (pan >> 8*1) & 0xFF;
-  hal_register_write(RG_PAN_ID_1, abyte);
+	uint8_t abyte;
 
-  abyte = addr & 0xFF;
-  hal_register_write(RG_SHORT_ADDR_0, abyte);
-  abyte = (addr >> 8*1) & 0xFF;
-  hal_register_write(RG_SHORT_ADDR_1, abyte);  
+	PRINTF("rf230: PAN=%x Short Addr=%x\n",pan,addr);
+	abyte = pan & 0xFF;
+	hal_register_write(RG_PAN_ID_0, abyte);
+	abyte = (pan >> 8 * 1) & 0xFF;
+	hal_register_write(RG_PAN_ID_1, abyte);
 
-  if (ieee_addr != NULL) {
-    PRINTF("MAC=%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_7, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_6, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_5, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_4, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_3, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_2, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_1, *ieee_addr++);
-    PRINTF(":%x",*ieee_addr);
-    hal_register_write(RG_IEEE_ADDR_0, *ieee_addr);
-    PRINTF("\n");
-  }
+	abyte = addr & 0xFF;
+	hal_register_write(RG_SHORT_ADDR_0, abyte);
+	abyte = (addr >> 8 * 1) & 0xFF;
+	hal_register_write(RG_SHORT_ADDR_1, abyte);  
+
+	if (ieee_addr != NULL) {
+		PRINTF("MAC=%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_7, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_6, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_5, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_4, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_3, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_2, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_1, *ieee_addr++);
+		PRINTF(":%x",*ieee_addr);
+		hal_register_write(RG_IEEE_ADDR_0, *ieee_addr);
+		PRINTF("\n");
+	}
 }
 /*---------------------------------------------------------------------------*/
 /*
