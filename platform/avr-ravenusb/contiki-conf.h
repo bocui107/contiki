@@ -190,7 +190,7 @@ extern void mac_log_802_15_4_rx(const uint8_t* buffer, size_t total_len);
 
 #define UIP_CONF_LL_802154	1
 #define UIP_CONF_LLH_LEN	14
-#define UIP_CONF_BUFSIZE	UIP_LINK_MTU + UIP_LLH_LEN + 4   /* +4 for vlan on macosx */
+#define UIP_CONF_BUFFER_SIZE	UIP_LINK_MTU + UIP_LLH_LEN + 4   /* +4 for vlan on macosx */
 
 /* 10 bytes per stateful address context - see sicslowpan.c */
 /* Default is 1 context with prefix aaaa::/64 */
